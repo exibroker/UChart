@@ -1,4 +1,4 @@
-import { init } from 'klinecharts'
+import { init } from 'ulacharts'
 
 const subscriptNumbers = {
   0: '₀',
@@ -40,7 +40,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline2.json')
+    fetch('https://ulacharts.com/datas/kline2.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

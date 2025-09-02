@@ -62,6 +62,9 @@ export interface IndicatorFigure<D = unknown> {
   title?: string
   type?: string
   baseValue?: number
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
+  backgroundColor?: string
+  color?: string
   attrs?: IndicatorFigureAttrsCallback<D>
   styles?: IndicatorFigureStylesCallback<D>
 }
@@ -242,7 +245,7 @@ export type IndicatorConstructor<D = unknown, C = unknown, E = unknown> = new ()
 
 export type EachFigureCallback<D> = (figure: IndicatorFigure<D>, figureStyles: IndicatorFigureStyle, index: number) => void
 
-export function eachFigures<D = unknown> (
+export function eachFigures<D = unknown>(
   indicator: Indicator,
   timestamps: NeighborData<Nullable<number>>,
   defaultStyles: IndicatorStyle,
@@ -359,12 +362,12 @@ export default class IndicatorImp<D = unknown, C = unknown, E = unknown> impleme
   private _prevIndicator: Indicator<D, C, E>
   private _lockSeriesPrecision = false
 
-  constructor (indicator: IndicatorTemplate<D, C, E>) {
+  constructor(indicator: IndicatorTemplate<D, C, E>) {
     this.override(indicator)
     this._lockSeriesPrecision = false
   }
 
-  override (indicator: Partial<Indicator<D, C, E>>): void {
+  override(indicator: Partial<Indicator<D, C, E>>): void {
     const { result, ...currentOthers } = this
     this._prevIndicator = { ...clone(currentOthers), result }
     const {
@@ -404,13 +407,13 @@ export default class IndicatorImp<D = unknown, C = unknown, E = unknown> impleme
     this.figures = figures ?? this.figures
   }
 
-  setSeriesPrecision (precision: number): void {
+  setSeriesPrecision(precision: number): void {
     if (!this._lockSeriesPrecision) {
       this.precision = precision
     }
   }
 
-  shouldUpdateImp (): ({ calc: boolean, draw: boolean, sort: boolean }) {
+  shouldUpdateImp(): ({ calc: boolean, draw: boolean, sort: boolean }) {
     const sort = this._prevIndicator.zLevel !== this.zLevel
     const result = this.shouldUpdate(this._prevIndicator, this)
     if (isBoolean(result)) {
@@ -419,7 +422,7 @@ export default class IndicatorImp<D = unknown, C = unknown, E = unknown> impleme
     return { ...result, sort }
   }
 
-  async calcImp (dataList: KLineData[]): Promise<boolean> {
+  async calcImp(dataList: KLineData[]): Promise<boolean> {
     try {
       const result = await this.calc(dataList, this)
       this.result = result
@@ -429,9 +432,9 @@ export default class IndicatorImp<D = unknown, C = unknown, E = unknown> impleme
     }
   }
 
-  static extend<D = unknown> (template: IndicatorTemplate<D>): IndicatorConstructor<D> {
+  static extend<D = unknown>(template: IndicatorTemplate<D>): IndicatorConstructor<D> {
     class Custom extends IndicatorImp<D> {
-      constructor () {
+      constructor() {
         super(template)
       }
     }

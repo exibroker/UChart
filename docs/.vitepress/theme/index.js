@@ -13,7 +13,7 @@ import './style.css'
 export default {
   extends: Theme,
   Layout,
-  enhanceApp ({ app }) {
+  enhanceApp({ app }) {
     app.component('Badge', Badge)
     app.use(TwoslashFloatingVue)
   }

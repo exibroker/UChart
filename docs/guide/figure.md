@@ -1,5 +1,5 @@
 # 基础图形
-基础图形是图表重要的组成部分，图表上所有的元素都是由基础图形组成，如果需要制作复杂的自定义技术指标和覆盖物，建议仔细阅读。这篇文档介绍了内置的基本图形和如何自定义一个基础图形。基础图形可以通过图表方法    `klinecharts.getFigureClass(name)` 获取。
+基础图形是图表重要的组成部分，图表上所有的元素都是由基础图形组成，如果需要制作复杂的自定义技术指标和覆盖物，建议仔细阅读。这篇文档介绍了内置的基本图形和如何自定义一个基础图形。基础图形可以通过图表方法    `ulacharts.getFigureClass(name)` 获取。
 
 ## 使用示例
 ::: warning 注意
@@ -9,7 +9,7 @@
 ```javascript
 // 获取基础图形实例
 // name为基础图形名字，如，'arc', 'circle'等。
-const Figure = klinecharts.getFigureClass(name)
+const Figure = ulacharts.getFigureClass(name)
 // 实例化并绘制
 // attrs 属性
 // styles 样式
@@ -212,5 +212,5 @@ new ({
 ```
 
 ## 自定义基础图形
-创建一个自定义基础图形，只需要生成基础图形信息，然后通过图表API [registerFigure(figure)](/api/chart/registerFigure) 全局添加，添加到图表即可和内置基础图形一样去使用。更多示例可参考 [https://github.com/klinecharts/KLineChart/tree/main/src/extension/figure](https://github.com/klinecharts/KLineChart/tree/main/src/extension/figure) 下的文件。
+创建一个自定义基础图形，只需要生成基础图形信息，然后通过图表API [registerFigure(figure)](/api/chart/registerFigure) 全局添加，添加到图表即可和内置基础图形一样去使用。更多示例可参考 [https://github.com/ulacharts/KLineChart/tree/main/src/extension/figure](https://github.com/ulacharts/KLineChart/tree/main/src/extension/figure) 下的文件。
 

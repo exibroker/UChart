@@ -78,7 +78,7 @@ let chartBaseId = 1
  * Chart version
  * @return {string}
  */
-function version (): string {
+function version(): string {
   return '__VERSION__'
 }
 
@@ -88,7 +88,7 @@ function version (): string {
  * @param options
  * @returns {Chart}
  */
-function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
+function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
   logTag()
   let dom: Nullable<HTMLElement> = null
   if (isString(ds)) {
@@ -105,10 +105,10 @@ function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
     logWarn('', '', 'The chart has been initialized on the dom！！！')
     return chart
   }
-  const id = `k_line_chart_${chartBaseId++}`
+  const id = `chart_${chartBaseId++}`
   chart = new ChartImp(dom, options)
   chart.id = id
-  dom.setAttribute('k-line-chart-id', id)
+  dom.setAttribute('chart-id', id)
   charts.set(id, chart)
   return chart
 }
@@ -117,7 +117,7 @@ function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
  * Destroy chart instance
  * @param dcs
  */
-function dispose (dcs: HTMLElement | Chart | string): void {
+function dispose(dcs: HTMLElement | Chart | string): void {
   let id: Nullable<string> = null
   if (dcs instanceof ChartImp) {
     id = dcs.id
@@ -128,7 +128,7 @@ function dispose (dcs: HTMLElement | Chart | string): void {
     } else {
       dom = dcs as HTMLElement
     }
-    id = dom?.getAttribute('k-line-chart-id') ?? null
+    id = dom?.getAttribute('chart-id') ?? null
   }
   if (id !== null) {
     charts.get(id)?.destroy()

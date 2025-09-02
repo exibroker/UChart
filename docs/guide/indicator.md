@@ -20,4 +20,4 @@
 
 
 ## 自定义技术指标
-创建一个自定义技术指标，只需要生成一个技术指标信息，然后通过图表API [registerIndicator](/api/chart/registerIndicator) 全局添加，添加到图表即可和内置技术指标一样去使用。更多示例可参考 [https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator](https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator) 下的文件。
+创建一个自定义技术指标，只需要生成一个技术指标信息，然后通过图表API [registerIndicator](/api/chart/registerIndicator) 全局添加，添加到图表即可和内置技术指标一样去使用。更多示例可参考 [https://github.com/ulacharts/KLineChart/tree/main/src/extension/indicator](https://github.com/ulacharts/KLineChart/tree/main/src/extension/indicator) 下的文件。

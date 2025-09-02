@@ -13,71 +13,74 @@ limitations under the License.
 -->
 
 <!DOCTYPE html>
-<html lang="en" >
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="keywords" content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表"/>
-    <meta name="description" content="shape test"/>
-    <script type="text/javascript" src="../../../dist/klinecharts.min.js"></script>
-    <script type="text/javascript" src="../../js/dataSource.js"></script>
-    <link rel="stylesheet" type="text/css" href="../../css/chart.css"/>
-    <title>Indicator -- Override</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="chart"></div>
-    <script>
-      window.onload = function () {
-        var chart = klinecharts.init('chart')
-        // Modify directly when creating
-        chart.createIndicator({ 
-          name: 'MA',
-          precision: 3,
-          calcParams: [5, 10],
-          styles: {
-            lines: [
-              { style: 'solid', size: 2, color: '#00ff00' },
-              { style: 'solid', size: 2, color: '#ff00ff' }
-            ]
-          }
-        }, false, { id: 'candle_pane' })
-        
-        // Create two identical EMA sub graph indicators
-        chart.createIndicator('EMA')
-        chart.createIndicator('EMA')
-        // Modify all created EMA indicators
-        chart.overrideIndicator({
-          name: 'EMA',
-          precision: 3,
-          calcParams: [20],
-          styles: {
-            lines: [
-              { style: 'solid', size: 2, color: '#09cf00' },
-              { style: 'solid', size: 2, color: '#ff00ff' }
-            ]
-          }
-        })
+<html lang="en">
 
-        // Create two identical BOLL sub graph indicators
-        var bollPaneId = chart.createIndicator('BOLL')
-        chart.createIndicator('BOLL')
-        // Modify the created BOLL indicator in the specified window
-        chart.overrideIndicator({
-          name: 'BOLL',
-          precision: 3,
-          calcParams: [16, 5],
-          styles: {
-            lines: [
-              { style: 'solid', size: 2, color: '#AC89BB' },
-              { style: 'solid', size: 2, color: '#78bcaa' },
-              { style: 'solid', size: 2, color: '#00ffad' }
-            ]
-          }
-        }, bollPaneId)
-        chart.applyNewData(generated())
-      }
-    </script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="keywords" content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表" />
+  <meta name="description" content="shape test" />
+  <script type="text/javascript" src="../../../dist/ucharts.min.js"></script>
+  <script type="text/javascript" src="../../js/dataSource.js"></script>
+  <link rel="stylesheet" type="text/css" href="../../css/chart.css" />
+  <title>Indicator -- Override</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="chart"></div>
+  <script>
+    window.onload = function () {
+      var chart = ucharts.init('chart')
+      // Modify directly when creating
+      chart.createIndicator({
+        name: 'MA',
+        precision: 3,
+        calcParams: [5, 10],
+        styles: {
+          lines: [
+            { style: 'solid', size: 2, color: '#00ff00' },
+            { style: 'solid', size: 2, color: '#ff00ff' }
+          ]
+        }
+      }, false, { id: 'candle_pane' })
+
+      // Create two identical EMA sub graph indicators
+      chart.createIndicator('EMA')
+      chart.createIndicator('EMA')
+      // Modify all created EMA indicators
+      chart.overrideIndicator({
+        name: 'EMA',
+        precision: 3,
+        calcParams: [20],
+        styles: {
+          lines: [
+            { style: 'solid', size: 2, color: '#09cf00' },
+            { style: 'solid', size: 2, color: '#ff00ff' }
+          ]
+        }
+      })
+
+      // Create two identical BOLL sub graph indicators
+      var bollPaneId = chart.createIndicator('BOLL')
+      chart.createIndicator('BOLL')
+      // Modify the created BOLL indicator in the specified window
+      chart.overrideIndicator({
+        name: 'BOLL',
+        precision: 3,
+        calcParams: [16, 5],
+        styles: {
+          lines: [
+            { style: 'solid', size: 2, color: '#AC89BB' },
+            { style: 'solid', size: 2, color: '#78bcaa' },
+            { style: 'solid', size: 2, color: '#00ffad' }
+          ]
+        }
+      }, bollPaneId)
+      chart.applyNewData(generated())
+    }
+  </script>
+</body>
+
 </html>

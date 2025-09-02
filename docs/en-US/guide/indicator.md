@@ -20,4 +20,4 @@ Some indicators can be overlaid on the candlestick using `chart.createIndicator(
 
 
 ## Custom Indicators
-To create a custom indicator, you only need to generate a indicator information, and then add it globally through the chart API [registerIndicator](/api/chart/registerIndicator) , add it to the chart and use it like a built-in indicator. For more examples, refer to the files under [https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator](https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator) .
+To create a custom indicator, you only need to generate a indicator information, and then add it globally through the chart API [registerIndicator](/api/chart/registerIndicator) , add it to the chart and use it like a built-in indicator. For more examples, refer to the files under [https://github.com/ulacharts/KLineChart/tree/main/src/extension/indicator](https://github.com/ulacharts/KLineChart/tree/main/src/extension/indicator) .

@@ -25,7 +25,7 @@ const isProd = env === 'production'
 
 const buildDir = resolvePath('dist')
 
-function createInputConfig ({ input, replaceValues }) {
+function createInputConfig({ input, replaceValues }) {
   return {
     input,
     plugins: [
@@ -48,7 +48,7 @@ function createInputConfig ({ input, replaceValues }) {
   }
 }
 
-function createOutputConfig ({
+function createOutputConfig({
   fileName, format, name, parentDir
 }) {
   let file
@@ -65,8 +65,8 @@ function createOutputConfig ({
     banner: `
     /**
      * @license
-     * KLineChart v${version}
-     * Copyright (c) 2019 lihu.
+     * @ula/chart v${version}
+     * Copyright (c) 2025 exi.
      * Licensed under Apache License 2.0 https://www.apache.org/licenses/LICENSE-2.0
      */`.trim()
   }

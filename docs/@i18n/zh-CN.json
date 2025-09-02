@@ -47,24 +47,38 @@
   "view_customize_free_title": "免费版",
   "view_customize_free_desc": "免费的专业级K线组件",
   "view_customize_free_price": "¥ 0",
-  "view_customize_free_features": ["高度可扩展的核心图表", "功能完善的Pro版图表", "完善的开发文档", "开发讨论微信群"],
+  "view_customize_free_features": [
+    "高度可扩展的核心图表",
+    "功能完善的Pro版图表",
+    "完善的开发文档",
+    "开发讨论微信群"
+  ],
   "view_customize_free_tip": "联系开发者加入开发讨论群。",
   "view_customize_sponsor_title": "赞助版",
   "view_customize_sponsor_desc": "全方位解答遇到的问题",
   "view_customize_sponsor_sponsor": "赞助",
   "view_customize_sponsor_price": "¥ 500",
-  "view_customize_sponsor_features": ["免费版所有服务", "首页赞助商广告位", "一对一答疑", "新功能优先支持"],
+  "view_customize_sponsor_features": [
+    "免费版所有服务",
+    "首页赞助商广告位",
+    "一对一答疑",
+    "新功能优先支持"
+  ],
   "view_customize_sponsor_tip": "在赞助页对项目进行捐赠，完成之后联系开发者获得一周时间的答疑。",
   "view_customize_custom_title": "定制版",
   "view_customize_custom_desc": "专属定制，扩展开发",
   "view_customize_custom_price": "¥ 面议",
-  "view_customize_custom_features": ["赞助版所有服务", "UI定制开发", "扩展定制开发", "其它图表相关定制开发"],
+  "view_customize_custom_features": [
+    "赞助版所有服务",
+    "UI定制开发",
+    "扩展定制开发",
+    "其它图表相关定制开发"
+  ],
   "view_customize_custom_tip": "联系开发者，讨论具体需求。",
   "view_404_title": "未找到页面",
   "view_404_desc_1": "确保地址正确且页面未移除。",
   "view_404_desc_2": "如果您认为这是一个错误，请联系您的 KLineChart 管理员。",
   "view_404_back_home": "返回首页",
-
   "component_chart_preview_open_in_codesandbox": "在 CodeSandbox 中打开",
   "component_chart_preview_open_in_codepen": "在 CodePen 中打开",
   "component_chart_preview_open_in_stackblitz": "在 StackBlitz 中打开",

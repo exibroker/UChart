@@ -4,8 +4,5 @@ import { data } from './index.data';
 </script>
 
 <template>
-  <ChartPreview
-    title="getSupportedLocales"
-    :hiddenChart="true"
-    :code="data.js"/>
+	<ChartPreview title="getSupportedLocales" :hiddenChart="true" :code="data.js" />
 </template>

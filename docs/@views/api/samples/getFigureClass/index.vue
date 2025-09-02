@@ -4,8 +4,5 @@ import { data } from './index.data';
 </script>
 
 <template>
-  <ChartPreview
-    title="getFigureClass"
-    :hiddenChart="true"
-    :code="data.js"/>
+	<ChartPreview title="getFigureClass" :hiddenChart="true" :code="data.js" />
 </template>

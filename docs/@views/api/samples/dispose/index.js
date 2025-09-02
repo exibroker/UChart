@@ -1,4 +1,4 @@
-import { init, dispose } from 'klinecharts'
+import { init, dispose } from 'ulacharts'
 
 const chart = init('dispose-chart')
 
@@ -8,7 +8,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ulacharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

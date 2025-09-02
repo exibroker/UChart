@@ -27,7 +27,7 @@ interface Boll {
  * @param ma
  * @return {number}
  */
-function getBollMd (dataList: KLineData[], ma: number): number {
+function getBollMd(dataList: KLineData[], ma: number): number {
   const dataSize = dataList.length
   let sum = 0
   dataList.forEach(data => {
@@ -49,9 +49,10 @@ const bollingerBands: IndicatorTemplate<Boll, number> = {
   precision: 2,
   shouldOhlc: true,
   figures: [
-    { key: 'up', title: 'UP: ', type: 'line' },
-    { key: 'mid', title: 'MID: ', type: 'line' },
-    { key: 'dn', title: 'DN: ', type: 'line' }
+    { key: 'up', title: 'UP: ', type: 'line', color: 'rgba(252, 205, 103)' },
+    { key: 'mid', title: 'MID: ', type: 'line', color: 'rgba(252, 205, 103)' },
+    { key: 'dn', title: 'DN: ', type: 'line', color: 'rgba(252, 205, 103)' },
+    { key: 'band', type: 'area', backgroundColor: 'rgba(252, 205, 103, 0.15)' }
   ],
   calc: (dataList, indicator) => {
     const params = indicator.calcParams

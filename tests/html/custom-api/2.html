@@ -13,47 +13,50 @@ limitations under the License.
 -->
 
 <!DOCTYPE html>
-<html lang="en" >
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="keywords" content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表"/>
-    <meta name="description" content="shape test"/>
-    <script type="text/javascript" src="../../../dist/klinecharts.min.js"></script>
-    <script type="text/javascript" src="../../js/dataSource.js"></script>
-    <link rel="stylesheet" type="text/css" href="../../css/chart.css"/>
-    <title>Custom Api - Api settings</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="chart"></div>
-    <script>
-      window.onload = function () {
-        var chart = klinecharts.init('chart')
-        chart.setCustomApi({
-          formatDate: function (dateTimeFormat, timestamp, format, type) {
-            return klinecharts.utils.formatDate(dateTimeFormat, timestamp, 'YYYY-MM-DD HH:mm:ss')
-          },
-          formatBigNumber: function (value) {
-            const v = +value
-            if (klinecharts.utils.isNumber(v)) {
-              if (value > 1000000000) {
-                return `${+((v / 1000000000).toFixed(3))}十亿`
-              }
-              if (value > 1000000) {
-                return `${+((v / 1000000).toFixed(3))}百万`
-              }
-              if (value > 1000) {
-                return `${+((v / 1000).toFixed(3))}千`
-              }
-              return `${value}`
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="keywords" content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表" />
+  <meta name="description" content="shape test" />
+  <script type="text/javascript" src="../../../dist/ucharts.min.js"></script>
+  <script type="text/javascript" src="../../js/dataSource.js"></script>
+  <link rel="stylesheet" type="text/css" href="../../css/chart.css" />
+  <title>Custom Api - Api settings</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="chart"></div>
+  <script>
+    window.onload = function () {
+      var chart = ucharts.init('chart')
+      chart.setCustomApi({
+        formatDate: function (dateTimeFormat, timestamp, format, type) {
+          return ucharts.utils.formatDate(dateTimeFormat, timestamp, 'YYYY-MM-DD HH:mm:ss')
+        },
+        formatBigNumber: function (value) {
+          const v = +value
+          if (ucharts.utils.isNumber(v)) {
+            if (value > 1000000000) {
+              return `${+((v / 1000000000).toFixed(3))}十亿`
             }
-            return '--' 
+            if (value > 1000000) {
+              return `${+((v / 1000000).toFixed(3))}百万`
+            }
+            if (value > 1000) {
+              return `${+((v / 1000).toFixed(3))}千`
+            }
+            return `${value}`
           }
-        })
-        chart.applyNewData(generated(), true)
-      }
-    </script>
-  </body>
+          return '--'
+        }
+      })
+      chart.applyNewData(generated(), true)
+    }
+  </script>
+</body>
+
 </html>

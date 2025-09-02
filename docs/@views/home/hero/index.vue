@@ -25,7 +25,7 @@ const { lang } = useData()
           </svg>
         </a>
         <GithubStarButton
-          username="klinecharts" 
+          username="ulacharts"
           repo="KLineChart"
           :inView="true"/>
       </div>

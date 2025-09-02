@@ -1,4 +1,4 @@
-import { init, registerStyles } from 'klinecharts'
+import { init, registerStyles } from 'ulacharts'
 
 registerStyles('customTheme', {
   candle: {
@@ -22,7 +22,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ulacharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

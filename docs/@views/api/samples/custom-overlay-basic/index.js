@@ -1,4 +1,4 @@
-import { init, registerOverlay } from 'klinecharts'
+import { init, registerOverlay } from 'ulacharts'
 
 registerOverlay({
   name: 'customOverlayBasic',
@@ -24,7 +24,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ulacharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

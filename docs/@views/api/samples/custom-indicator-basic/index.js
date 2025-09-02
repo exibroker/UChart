@@ -1,4 +1,4 @@
-import { init, registerIndicator } from 'klinecharts'
+import { init, registerIndicator } from 'ulacharts'
 
 registerIndicator({
   name: 'customIndicatorBasic',
@@ -25,7 +25,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ulacharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)
