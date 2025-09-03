@@ -13,7 +13,7 @@
  */
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = require('./umd/ucharts.min.js')
+  module.exports = require('./umd/charts.min.js')
 } else {
-  module.exports = require('./umd/ucharts.js')
+  module.exports = require('./umd/charts.js')
 }

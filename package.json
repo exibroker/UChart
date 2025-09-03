@@ -1,10 +1,10 @@
 {
-  "name": "@ula/charts",
-  "version": "0.0.1",
+  "name": "@ulachart/core",
+  "version": "0.0.2",
   "description": "Lightweight financial chart built with html5 canvas",
   "main": "./dist/index.cjs",
   "module": "./dist/index.esm.js",
-  "unpkg": "./dist/umd/ucharts.min.js",
+  "unpkg": "./dist/umd/uchart.min.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "files": [
@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/exibroker/uchart/issues"
   },
-  "homepage": "https://ucharts.com/",
+  "homepage": "https://github.com/exibroker/uchart",
   "keywords": [
     "k-line",
     "time-line",
@@ -46,7 +46,7 @@
     "build-umd:prod": "cross-env NODE_ENV=production node scripts/build-umd.js",
     "build-umd": "npm run build-umd:dev && npm run build-umd:prod",
     "build-core": "npm run build-esm && npm run build-cjs && npm run build-umd",
-    "build-dts": "dts-bundle-generator --no-banner true --fail-on-class true --umd-module-name ucharts -o dist/index.d.ts src/index.ts",
+    "build-dts": "dts-bundle-generator --no-banner true --fail-on-class true --umd-module-name uchart -o dist/index.d.ts src/index.ts",
     "build": "npm run clean && npm run build-core && npm run build-dts",
     "prepare": "husky install",
     "docs:dev": "npm run dev --prefix docs",

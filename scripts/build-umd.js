@@ -2,7 +2,7 @@ import build from './build.js'
 import { isDev, env } from './config.js'
 import { resolvePath } from './utils.js'
 
-const fileName = isDev ? 'ucharts.js' : 'ucharts.min.js'
+const fileName = isDev ? 'charts.js' : 'charts.min.js'
 const index = resolvePath('index.ts', resolvePath('src'))
 
 build({
@@ -11,5 +11,5 @@ build({
   fileName,
   format: 'umd',
   parentDir: 'umd',
-  name: 'ucharts'
+  name: 'charts'
 })
