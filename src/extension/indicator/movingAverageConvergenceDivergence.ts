@@ -12,9 +12,12 @@
  * limitations under the License.
  */
 
+import type KLineData from '../../common/KLineData'
+import { type IndicatorStyle, PolygonType } from '../../common/Styles'
+
 import { formatValue } from '../../common/utils/format'
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import { type Indicator, type IndicatorTemplate, type IndicatorFigureStylesCallbackData } from '../../component/Indicator'
 
 interface Macd {
   dif?: number
@@ -30,7 +33,7 @@ interface Macd {
  * ⒊再计算DIFF的M日的平均的指数平滑移动平均线，记为DEA。
  * ⒋最后用DIFF减DEA，得MACD。MACD通常绘制成围绕零轴线波动的柱形图。MACD柱状大于0涨颜色，小于0跌颜色。
  */
-const movingAverageConvergenceDivergence: IndicatorTemplate<Macd, number> = {
+const movingAverageConvergenceDivergence: IndicatorTemplate<Macd> = {
   name: 'MACD',
   shortName: 'MACD',
   calcParams: [12, 26, 9],
@@ -42,33 +45,33 @@ const movingAverageConvergenceDivergence: IndicatorTemplate<Macd, number> = {
       title: 'MACD: ',
       type: 'bar',
       baseValue: 0,
-      styles: ({ data, indicator, defaultStyles }) => {
+      styles: (data: IndicatorFigureStylesCallbackData<Macd>, indicator: Indicator, defaultStyles: IndicatorStyle) => {
         const { prev, current } = data
-        const prevMacd = prev?.macd ?? Number.MIN_SAFE_INTEGER
-        const currentMacd = current?.macd ?? Number.MIN_SAFE_INTEGER
-        let color = ''
+        const prevMacd = prev.indicatorData?.macd ?? Number.MIN_SAFE_INTEGER
+        const currentMacd = current.indicatorData?.macd ?? Number.MIN_SAFE_INTEGER
+        let color: string
         if (currentMacd > 0) {
-          color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles!.bars)[0].upColor) as string
+          color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles.bars)[0].upColor) as string
         } else if (currentMacd < 0) {
-          color = formatValue(indicator.styles, 'bars[0].downColor', (defaultStyles!.bars)[0].downColor) as string
+          color = formatValue(indicator.styles, 'bars[0].downColor', (defaultStyles.bars)[0].downColor) as string
         } else {
-          color = formatValue(indicator.styles, 'bars[0].noChangeColor', (defaultStyles!.bars)[0].noChangeColor) as string
+          color = formatValue(indicator.styles, 'bars[0].noChangeColor', (defaultStyles.bars)[0].noChangeColor) as string
         }
-        const style = prevMacd < currentMacd ? 'stroke' : 'fill'
+        const style = prevMacd < currentMacd ? PolygonType.Stroke : PolygonType.Fill
         return { style, color, borderColor: color }
       }
     }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Macd>) => {
+    const params = indicator.calcParams as number[]
     let closeSum = 0
-    let emaShort = 0
-    let emaLong = 0
+    let emaShort: number
+    let emaLong: number
     let dif = 0
     let difSum = 0
     let dea = 0
     const maxPeriod = Math.max(params[0], params[1])
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const macd: Macd = {}
       const close = kLineData.close
       closeSum += close
@@ -100,9 +103,8 @@ const movingAverageConvergenceDivergence: IndicatorTemplate<Macd, number> = {
           macd.dea = dea
         }
       }
-      prev[kLineData.timestamp] = macd
-      return prev
-    }, {})
+      return macd
+    })
   }
 }
 

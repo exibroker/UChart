@@ -11,13 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type VisibleRange from '../common/VisibleRange'
 
 import type DrawPane from '../pane/DrawPane'
 
+import { getPrecision, nice, round } from '../common/utils/number'
 import type Bounding from '../common/Bounding'
-import type { Chart } from '../Chart'
 
 export interface AxisTick {
   coord: number
@@ -28,31 +27,12 @@ export interface AxisTick {
 export interface AxisRange extends VisibleRange {
   readonly range: number
   readonly realRange: number
-  readonly displayFrom: number
-  readonly displayTo: number
-  readonly displayRange: number
 }
 
-export interface AxisGap {
-  top?: number
-  bottom?: number
+export interface Axis {
+  convertToPixel: (value: number) => number
+  convertFromPixel: (px: number) => number
 }
-
-export type AxisPosition = 'left' | 'right'
-
-export interface AxisValueToValueParams {
-  range: AxisRange
-}
-
-export type AxisValueToValueCallback = (value: number, params: AxisValueToValueParams) => number
-
-export interface AxisCreateRangeParams {
-  chart: Chart
-  paneId: string
-  defaultRange: AxisRange
-}
-
-export type AxisCreateRangeCallback = (params: AxisCreateRangeParams) => AxisRange
 
 export interface AxisCreateTicksParams {
   range: AxisRange
@@ -62,76 +42,38 @@ export interface AxisCreateTicksParams {
 
 export type AxisCreateTicksCallback = (params: AxisCreateTicksParams) => AxisTick[]
 
-export type AxisMinSpanCallback = (value: number) => number
-
 export interface AxisTemplate {
   name: string
-  reverse?: boolean
-  inside?: boolean
-  position?: AxisPosition
-  scrollZoomEnabled?: boolean
-  gap?: AxisGap
-  valueToRealValue?: AxisValueToValueCallback
-  realValueToDisplayValue?: AxisValueToValueCallback
-  displayValueToRealValue?: AxisValueToValueCallback
-  realValueToValue?: AxisValueToValueCallback
-  displayValueToText?: (value: number, precision: number) => string
-  minSpan?: AxisMinSpanCallback
-  createRange?: AxisCreateRangeCallback
-  createTicks?: AxisCreateTicksCallback
-}
-
-export interface Axis {
-  override: (axis: AxisTemplate) => void
-  getTicks: () => AxisTick[]
-  getRange: () => AxisRange
-  getAutoSize: () => number
-  convertToPixel: (value: number) => number
-  convertFromPixel: (px: number) => number
-}
-
-export type AxisCreate = Omit<AxisTemplate, 'displayValueToText' | 'valueToRealValue' | 'realValueToDisplayValue' | 'displayValueToRealValue' | 'realValueToValue'>
-
-function getDefaultAxisRange (): AxisRange {
-  return {
-    from: 0,
-    to: 0,
-    range: 0,
-    realFrom: 0,
-    realTo: 0,
-    realRange: 0,
-    displayFrom: 0,
-    displayTo: 0,
-    displayRange: 0
-  }
-}
-
-export default abstract class AxisImp implements Axis {
-  name: string
-  scrollZoomEnabled = true
   createTicks: AxisCreateTicksCallback
+}
 
-  private readonly _parent: DrawPane
+export default abstract class AxisImp implements Pick<AxisTemplate, 'createTicks'>, Axis {
+  private readonly _parent: DrawPane<AxisImp>
 
-  private _range = getDefaultAxisRange()
-  private _prevRange = getDefaultAxisRange()
+  private _range: AxisRange = { from: 0, to: 0, range: 0, realFrom: 0, realTo: 0, realRange: 0 }
+  private _prevRange: AxisRange = { from: 0, to: 0, range: 0, realFrom: 0, realTo: 0, realRange: 0 }
   private _ticks: AxisTick[] = []
 
   private _autoCalcTickFlag = true
 
-  constructor (parent: DrawPane) {
+  constructor (parent: DrawPane<AxisImp>) {
     this._parent = parent
   }
 
-  getParent (): DrawPane { return this._parent }
+  getParent (): DrawPane<AxisImp> { return this._parent }
 
   buildTicks (force: boolean): boolean {
     if (this._autoCalcTickFlag) {
-      this._range = this.createRangeImp()
+      this._range = this.calcRange()
     }
     if (this._prevRange.from !== this._range.from || this._prevRange.to !== this._range.to || force) {
       this._prevRange = this._range
-      this._ticks = this.createTicksImp()
+      const defaultTicks = this.optimalTicks(this._calcTicks())
+      this._ticks = this.createTicks({
+        range: this._range,
+        bounding: this.getSelfBounding(),
+        defaultTicks
+      })
       return true
     }
     return false
@@ -139,6 +81,10 @@ export default abstract class AxisImp implements Axis {
 
   getTicks (): AxisTick[] {
     return this._ticks
+  }
+
+  getScrollZoomEnabled (): boolean {
+    return this.getParent().getOptions().axisOptions.scrollZoomEnabled ?? true
   }
 
   setRange (range: AxisRange): void {
@@ -154,15 +100,44 @@ export default abstract class AxisImp implements Axis {
 
   getAutoCalcTickFlag (): boolean { return this._autoCalcTickFlag }
 
-  protected abstract createRangeImp (): AxisRange
+  private _calcTicks (): AxisTick[] {
+    const { realFrom, realTo, realRange } = this._range
+    const ticks: AxisTick[] = []
 
-  protected abstract createTicksImp (): AxisTick[]
+    if (realRange >= 0) {
+      const [interval, precision] = this._calcTickInterval(realRange)
+      const first = round(Math.ceil(realFrom / interval) * interval, precision)
+      const last = round(Math.floor(realTo / interval) * interval, precision)
+      let n = 0
+      let f = first
 
-  protected abstract getBounding (): Bounding
+      if (interval !== 0) {
+        while (f <= last) {
+          const v = f.toFixed(precision)
+          ticks[n] = { text: v, coord: 0, value: v }
+          ++n
+          f += interval
+        }
+      }
+    }
+    return ticks
+  }
 
-  abstract override (axis: AxisTemplate): void
+  private _calcTickInterval (range: number): number[] {
+    const interval = nice(range / 8.0)
+    const precision = getPrecision(interval)
+    return [interval, precision]
+  }
+
+  protected abstract calcRange (): AxisRange
+
+  protected abstract optimalTicks (ticks: AxisTick[]): AxisTick[]
+
+  abstract createTicks (params: AxisCreateTicksParams): AxisTick[]
 
   abstract getAutoSize (): number
+
+  abstract getSelfBounding (): Bounding
 
   abstract convertToPixel (value: number): number
   abstract convertFromPixel (px: number): number

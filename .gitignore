@@ -3,7 +3,9 @@
 /.vscode
 /website
 /dist
+/types
 /docs/.vitepress/cache
-/docs/node_modules
 
+/package-lock.json
+/pnpm-lock.yaml
 .npmrc

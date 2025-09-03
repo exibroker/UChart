@@ -12,16 +12,13 @@
  * limitations under the License.
  */
 
+import { YAxisType } from '../common/Styles'
+import { formatPrecision, formatThousands, formatFoldDecimal } from '../common/utils/format'
 import { isValid } from '../common/utils/typeChecks'
-import { calcTextWidth } from '../common/utils/canvas'
-import type { TextStyle } from '../common/Styles'
-import { SymbolDefaultPrecisionConstants } from '../common/SymbolInfo'
 
 import View from './View'
 
-import type { FigureCreate } from '../component/Figure'
 import type YAxis from '../component/YAxis'
-import type { TextAttrs } from '../extension/figure/text'
 
 export default class CandleLastPriceLabelView extends View {
   override drawImp (ctx: CanvasRenderingContext2D): void {
@@ -33,24 +30,32 @@ export default class CandleLastPriceLabelView extends View {
     const lastPriceMarkStyles = priceMarkStyles.last
     const lastPriceMarkTextStyles = lastPriceMarkStyles.text
     if (priceMarkStyles.show && lastPriceMarkStyles.show && lastPriceMarkTextStyles.show) {
-      const precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE
+      const precision = chartStore.getPrecision()
       const yAxis = pane.getAxisComponent() as YAxis
       const dataList = chartStore.getDataList()
       const data = dataList[dataList.length - 1]
       if (isValid(data)) {
         const { close, open } = data
-        const comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open : (dataList[dataList.length - 2]?.close ?? close)
         const priceY = yAxis.convertToNicePixel(close)
-        let backgroundColor = ''
-        if (close > comparePrice) {
+        let backgroundColor: string
+        if (close > open) {
           backgroundColor = lastPriceMarkStyles.upColor
-        } else if (close < comparePrice) {
+        } else if (close < open) {
           backgroundColor = lastPriceMarkStyles.downColor
         } else {
           backgroundColor = lastPriceMarkStyles.noChangeColor
         }
-        let x = 0
-        let textAlgin: CanvasTextAlign = 'left'
+        let text: string
+        if (yAxis.getType() === YAxisType.Percentage) {
+          const fromData = chartStore.getVisibleFirstData()
+          const fromClose = fromData!.close
+          text = `${((close - fromClose) / fromClose * 100).toFixed(2)}%`
+        } else {
+          text = formatPrecision(close, precision.price)
+        }
+        text = formatFoldDecimal(formatThousands(text, chartStore.getThousandsSeparator()), chartStore.getDecimalFoldThreshold())
+        let x: number
+        let textAlgin: CanvasTextAlign
         if (yAxis.isFromZero()) {
           x = 0
           textAlgin = 'left'
@@ -58,28 +63,12 @@ export default class CandleLastPriceLabelView extends View {
           x = bounding.width
           textAlgin = 'right'
         }
-
-        const textFigures: Array<FigureCreate<TextAttrs, TextStyle>> = []
-        const yAxisRange = yAxis.getRange()
-        let priceText = yAxis.displayValueToText(
-          yAxis.realValueToDisplayValue(
-            yAxis.valueToRealValue(close, { range: yAxisRange }),
-            { range: yAxisRange }
-          ),
-          precision
-        )
-        priceText = chartStore.getDecimalFold().format(chartStore.getThousandsSeparator().format(priceText))
-        const { paddingLeft, paddingRight, paddingTop, paddingBottom, size, family, weight } = lastPriceMarkTextStyles
-        let textWidth = paddingLeft + calcTextWidth(priceText, size, weight, family) + paddingRight
-        const priceTextHeight = paddingTop + size + paddingBottom
-        textFigures.push({
+        this.createFigure({
           name: 'text',
           attrs: {
             x,
             y: priceY,
-            width: textWidth,
-            height: priceTextHeight,
-            text: priceText,
+            text,
             align: textAlgin,
             baseline: 'middle'
           },
@@ -87,45 +76,7 @@ export default class CandleLastPriceLabelView extends View {
             ...lastPriceMarkTextStyles,
             backgroundColor
           }
-        })
-        const formatExtendText = chartStore.getInnerFormatter().formatExtendText
-        const priceTextHalfHeight = size / 2
-        let aboveY = priceY - priceTextHalfHeight - paddingTop
-        let belowY = priceY + priceTextHalfHeight + paddingBottom
-        lastPriceMarkStyles.extendTexts.forEach((item, index) => {
-          const text = formatExtendText({ type: 'last_price', data, index })
-          if (text.length > 0 && item.show) {
-            const textHalfHeight = item.size / 2
-            let textY = 0
-            if (item.position === 'above_price') {
-              aboveY -= (item.paddingBottom + textHalfHeight)
-              textY = aboveY
-              aboveY -= (textHalfHeight + item.paddingTop)
-            } else {
-              belowY += (item.paddingTop + textHalfHeight)
-              textY = belowY
-              belowY += (textHalfHeight + item.paddingBottom)
-            }
-            textWidth = Math.max(textWidth, item.paddingLeft + calcTextWidth(text, item.size, item.weight, item.family) + item.paddingRight)
-            textFigures.push({
-              name: 'text',
-              attrs: {
-                x,
-                y: textY,
-                width: textWidth,
-                height: item.paddingTop + item.size + item.paddingBottom,
-                text,
-                align: textAlgin,
-                baseline: 'middle'
-              },
-              styles: { ...item, backgroundColor }
-            })
-          }
-        })
-        textFigures.forEach(figure => {
-          figure.attrs.width = textWidth
-          this.createFigure(figure)?.draw(ctx)
-        })
+        })?.draw(ctx)
       }
     }
   }

@@ -13,11 +13,11 @@
  */
 
 import type Coordinate from '../../common/Coordinate'
-import type { TextStyle } from '../../common/Styles'
+import { type TextStyle } from '../../common/Styles'
 
 import { createFont, calcTextWidth } from '../../common/utils/canvas'
 
-import type { FigureTemplate } from '../../component/Figure'
+import { type FigureTemplate } from '../../component/Figure'
 
 import { type RectAttrs, drawRect } from './rect'
 
@@ -26,7 +26,7 @@ export function getTextRect (attrs: TextAttrs, styles: Partial<TextStyle>): Rect
   const { x, y, text, align = 'left', baseline = 'top', width: w, height: h } = attrs
   const width = w ?? (paddingLeft + calcTextWidth(text, size, weight, family) + paddingRight)
   const height = h ?? (paddingTop + size + paddingBottom)
-  let startX = 0
+  let startX: number
   switch (align) {
     case 'left':
     case 'start': {
@@ -43,7 +43,7 @@ export function getTextRect (attrs: TextAttrs, styles: Partial<TextStyle>): Rect
       break
     }
   }
-  let startY = 0
+  let startY: number
   switch (baseline) {
     case 'top':
     case 'hanging': {
@@ -67,8 +67,8 @@ export function getTextRect (attrs: TextAttrs, styles: Partial<TextStyle>): Rect
 export function checkCoordinateOnText (coordinate: Coordinate, attrs: TextAttrs | TextAttrs[], styles: Partial<TextStyle>): boolean {
   let texts: TextAttrs[] = []
   texts = texts.concat(attrs)
-  for (const text of texts) {
-    const { x, y, width, height } = getTextRect(text, styles)
+  for (let i = 0; i < texts.length; i++) {
+    const { x, y, width, height } = getTextRect(texts[i], styles)
     if (
       coordinate.x >= x &&
       coordinate.x <= x + width &&

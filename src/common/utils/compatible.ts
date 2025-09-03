@@ -16,7 +16,7 @@ import { isFunction } from './typeChecks'
 
 export const DEFAULT_REQUEST_ID = -1
 
-export function requestAnimationFrame (fn: (params: unknown) => unknown): number {
+export function requestAnimationFrame (fn: (params: any) => any): number {
   if (isFunction(window.requestAnimationFrame)) {
     return window.requestAnimationFrame(fn)
   }

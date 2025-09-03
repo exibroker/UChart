@@ -12,20 +12,21 @@
  * limitations under the License.
  */
 
-import XAxisImp, { type XAxisTemplate, type XAxisConstructor } from '../../component/XAxis'
+import { type AxisTemplate } from '../../component/Axis'
+import XAxisImp, { type XAxisConstructor } from '../../component/XAxis'
 
-import normal from './normal'
+import defaultXAxis from './default'
 
 const xAxises: Record<string, XAxisConstructor> = {
-  normal: XAxisImp.extend(normal)
+  default: XAxisImp.extend(defaultXAxis)
 }
 
-function registerXAxis (axis: XAxisTemplate): void {
+function registerXAxis (axis: AxisTemplate): void {
   xAxises[axis.name] = XAxisImp.extend(axis)
 }
 
 function getXAxisClass (name: string): XAxisConstructor {
-  return xAxises[name] ?? xAxises.normal
+  return xAxises[name] ?? xAxises.default
 }
 
 export {

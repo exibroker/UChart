@@ -13,12 +13,12 @@
  */
 
 import View from './View'
-import type { VisibleRangeData } from '../common/Data'
+import type VisibleData from '../common/VisibleData'
 import type BarSpace from '../common/BarSpace'
-import type { YAxis } from '../component/YAxis'
+import type YAxis from '../component/YAxis'
 
 export type EachChildCallback = (
-  data: VisibleRangeData,
+  data: VisibleData,
   barSpace: BarSpace,
   index: number
 ) => void
@@ -27,13 +27,10 @@ export default abstract class ChildrenView extends View<YAxis> {
   protected eachChildren (childCallback: EachChildCallback): void {
     const pane = this.getWidget().getPane()
     const chartStore = pane.getChart().getChartStore()
-    const visibleRangeDataList = chartStore.getVisibleRangeDataList()
-    const barSpace = chartStore.getBarSpace()
-    const dataLength = visibleRangeDataList.length
-    let index = 0
-    while (index < dataLength) {
-      childCallback(visibleRangeDataList[index], barSpace, index)
-      ++index
-    }
+    const visibleDataList = chartStore.getVisibleDataList()
+    const barSpace = chartStore.getTimeScaleStore().getBarSpace()
+    visibleDataList.forEach((data: VisibleData, index: number) => {
+      childCallback(data, barSpace, index)
+    })
   }
 }

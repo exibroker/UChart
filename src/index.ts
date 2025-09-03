@@ -24,9 +24,9 @@
  * limitations under the License.
  */
 
-import type {
-  LineType, PolygonType, TooltipShowRule, TooltipShowType, FeatureType, TooltipFeaturePosition,
-  CandleType, CandleTooltipRectPosition
+import {
+  LineType, PolygonType, TooltipShowRule, TooltipShowType, TooltipIconPosition,
+  CandleType, YAxisPosition, YAxisType, CandleTooltipRectPosition
 } from './common/Styles'
 import type Nullable from './common/Nullable'
 
@@ -35,33 +35,27 @@ import { logError, logTag, logWarn } from './common/utils/logger'
 import {
   clone, merge, isString, isNumber, isValid, isObject, isArray, isFunction, isBoolean
 } from './common/utils/typeChecks'
-import {
-  formatValue,
-  formatPrecision,
-  formatBigNumber,
-  formatThousands,
-  formatFoldDecimal,
-  formatTimestampByTemplate
-} from './common/utils/format'
+import { formatValue, formatPrecision, formatBigNumber, formatDate, formatThousands, formatFoldDecimal } from './common/utils/format'
 import { calcTextWidth } from './common/utils/canvas'
-import type { ActionType } from './common/Action'
-import type { IndicatorSeries } from './component/Indicator'
-import type { OverlayMode } from './component/Overlay'
+import { ActionType } from './common/Action'
+import { LoadDataType } from './common/LoadDataCallback'
 
-import type { FormatDateType, Options } from './Options'
-import ChartImp, { type Chart, type DomPosition } from './Chart'
+import { IndicatorSeries } from './component/Indicator'
+import { OverlayMode } from './component/Overlay'
 
-import { checkCoordinateOnArc } from './extension/figure/arc'
-import { checkCoordinateOnCircle } from './extension/figure/circle'
+import { type Options, FormatDateType } from './Options'
+import ChartImp, { type Chart, DomPosition } from './Chart'
+
+import { checkCoordinateOnArc, drawArc } from './extension/figure/arc'
+import { checkCoordinateOnCircle, drawCircle } from './extension/figure/circle'
 import {
-  checkCoordinateOnLine,
-  getLinearYFromSlopeIntercept,
-  getLinearSlopeIntercept,
-  getLinearYFromCoordinates
+  checkCoordinateOnLine, drawLine,
+  getLinearYFromSlopeIntercept, getLinearSlopeIntercept, getLinearYFromCoordinates
 } from './extension/figure/line'
-import { checkCoordinateOnPolygon } from './extension/figure/polygon'
-import { checkCoordinateOnRect } from './extension/figure/rect'
-import { checkCoordinateOnText } from './extension/figure/text'
+import { checkCoordinateOnPolygon, drawPolygon } from './extension/figure/polygon'
+import { checkCoordinateOnRect, drawRect } from './extension/figure/rect'
+import { drawRectText } from './extension/figure/rectText'
+import { checkCoordinateOnText, drawText } from './extension/figure/text'
 
 import { registerFigure, getSupportedFigures, getFigureClass } from './extension/figure/index'
 import { registerIndicator, getSupportedIndicators } from './extension/indicator/index'
@@ -71,14 +65,14 @@ import { registerStyles } from './extension/styles/index'
 import { registerXAxis } from './extension/x-axis'
 import { registerYAxis } from './extension/y-axis'
 
-const charts = new Map<string, ChartImp>()
+const instances = new Map<string, ChartImp>()
 let chartBaseId = 1
 
 /**
  * Chart version
  * @return {string}
  */
-function version(): string {
+function version (): string {
   return '__VERSION__'
 }
 
@@ -88,9 +82,9 @@ function version(): string {
  * @param options
  * @returns {Chart}
  */
-function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
+function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
   logTag()
-  let dom: Nullable<HTMLElement> = null
+  let dom: Nullable<HTMLElement>
   if (isString(ds)) {
     dom = document.getElementById(ds)
   } else {
@@ -100,16 +94,16 @@ function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
     logError('', '', 'The chart cannot be initialized correctly. Please check the parameters. The chart container cannot be null and child elements need to be added!!!')
     return null
   }
-  let chart = charts.get(dom.id)
+  let chart = instances.get(dom.id)
   if (isValid(chart)) {
     logWarn('', '', 'The chart has been initialized on the dom！！！')
     return chart
   }
-  const id = `chart_${chartBaseId++}`
+  const id = `k_line_chart_${chartBaseId++}`
   chart = new ChartImp(dom, options)
   chart.id = id
-  dom.setAttribute('chart-id', id)
-  charts.set(id, chart)
+  dom.setAttribute('k-line-chart-id', id)
+  instances.set(id, chart)
   return chart
 }
 
@@ -117,22 +111,22 @@ function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
  * Destroy chart instance
  * @param dcs
  */
-function dispose(dcs: HTMLElement | Chart | string): void {
-  let id: Nullable<string> = null
+function dispose (dcs: HTMLElement | Chart | string): void {
+  let id: Nullable<string>
   if (dcs instanceof ChartImp) {
     id = dcs.id
   } else {
-    let dom: Nullable<HTMLElement> = null
+    let dom: Nullable<HTMLElement>
     if (isString(dcs)) {
       dom = document.getElementById(dcs)
     } else {
       dom = dcs as HTMLElement
     }
-    id = dom?.getAttribute('chart-id') ?? null
+    id = dom?.getAttribute('k-line-chart-id') ?? null
   }
   if (id !== null) {
-    charts.get(id)?.destroy()
-    charts.delete(id)
+    instances.get(id)?.destroy()
+    instances.delete(id)
   }
 }
 
@@ -149,7 +143,7 @@ const utils = {
   formatValue,
   formatPrecision,
   formatBigNumber,
-  formatDate: formatTimestampByTemplate,
+  formatDate,
   formatThousands,
   formatFoldDecimal,
   calcTextWidth,
@@ -161,7 +155,14 @@ const utils = {
   checkCoordinateOnLine,
   checkCoordinateOnPolygon,
   checkCoordinateOnRect,
-  checkCoordinateOnText
+  checkCoordinateOnText,
+  drawArc,
+  drawCircle,
+  drawLine,
+  drawPolygon,
+  drawRect,
+  drawText,
+  drawRectText
 }
 
 export {
@@ -173,7 +174,7 @@ export {
   registerStyles,
   registerXAxis, registerYAxis,
   utils,
-  type LineType, type PolygonType, type TooltipShowRule, type TooltipShowType, type FeatureType, type TooltipFeaturePosition, type CandleTooltipRectPosition,
-  type CandleType, type FormatDateType,
-  type DomPosition, type ActionType, type IndicatorSeries, type OverlayMode
+  LineType, PolygonType, TooltipShowRule, TooltipShowType, TooltipIconPosition, CandleTooltipRectPosition,
+  CandleType, YAxisPosition, YAxisType, FormatDateType,
+  DomPosition, ActionType, IndicatorSeries, OverlayMode, LoadDataType
 }

@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Cr {
   cr?: number
@@ -37,7 +38,7 @@ interface Cr {
  * 输出MA4:M4/2.5+1日前的CR的M4日简单移动平均
  *
  */
-const currentRatio: IndicatorTemplate<Cr, number> = {
+const currentRatio: IndicatorTemplate<Cr> = {
   name: 'CR',
   shortName: 'CR',
   calcParams: [26, 10, 20, 40, 60],
@@ -48,8 +49,8 @@ const currentRatio: IndicatorTemplate<Cr, number> = {
     { key: 'ma3', title: 'MA3: ', type: 'line' },
     { key: 'ma4', title: 'MA4: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Cr>) => {
+    const params = indicator.calcParams as number[]
 
     const ma1ForwardPeriod = Math.ceil(params[1] / 2.5 + 1)
     const ma2ForwardPeriod = Math.ceil(params[2] / 2.5 + 1)
@@ -63,9 +64,8 @@ const currentRatio: IndicatorTemplate<Cr, number> = {
     const ma3List: number[] = []
     let ma4Sum = 0
     const ma4List: number[] = []
-    const crList: Cr[] = []
-    const result: Record<number, Cr> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Cr[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const cr: Cr = {}
       const prevData = dataList[i - 1] ?? kLineData
       const prevMid = (prevData.high + prevData.close + prevData.low + prevData.open) / 4
@@ -89,32 +89,31 @@ const currentRatio: IndicatorTemplate<Cr, number> = {
           if (i >= params[0] + params[1] + ma1ForwardPeriod - 3) {
             cr.ma1 = ma1List[ma1List.length - 1 - ma1ForwardPeriod]
           }
-          ma1Sum -= (crList[i - (params[1] - 1)].cr ?? 0)
+          ma1Sum -= (result[i - (params[1] - 1)].cr ?? 0)
         }
         if (i >= params[0] + params[2] - 2) {
           ma2List.push(ma2Sum / params[2])
           if (i >= params[0] + params[2] + ma2ForwardPeriod - 3) {
             cr.ma2 = ma2List[ma2List.length - 1 - ma2ForwardPeriod]
           }
-          ma2Sum -= (crList[i - (params[2] - 1)].cr ?? 0)
+          ma2Sum -= (result[i - (params[2] - 1)].cr ?? 0)
         }
         if (i >= params[0] + params[3] - 2) {
           ma3List.push(ma3Sum / params[3])
           if (i >= params[0] + params[3] + ma3ForwardPeriod - 3) {
             cr.ma3 = ma3List[ma3List.length - 1 - ma3ForwardPeriod]
           }
-          ma3Sum -= (crList[i - (params[3] - 1)].cr ?? 0)
+          ma3Sum -= (result[i - (params[3] - 1)].cr ?? 0)
         }
         if (i >= params[0] + params[4] - 2) {
           ma4List.push(ma4Sum / params[4])
           if (i >= params[0] + params[4] + ma4ForwardPeriod - 3) {
             cr.ma4 = ma4List[ma4List.length - 1 - ma4ForwardPeriod]
           }
-          ma4Sum -= (crList[i - (params[4] - 1)].cr ?? 0)
+          ma4Sum -= (result[i - (params[4] - 1)].cr ?? 0)
         }
       }
-      crList.push(cr)
-      result[kLineData.timestamp] = cr
+      result.push(cr)
     })
     return result
   }

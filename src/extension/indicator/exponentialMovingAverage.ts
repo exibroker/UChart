@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate, IndicatorSeries } from '../../component/Indicator'
 
 interface Ema {
   ema1?: number
@@ -23,10 +24,10 @@ interface Ema {
 /**
  * EMA 指数移动平均
  */
-const exponentialMovingAverage: IndicatorTemplate<Ema, number> = {
+const exponentialMovingAverage: IndicatorTemplate<Ema> = {
   name: 'EMA',
   shortName: 'EMA',
-  series: 'price',
+  series: IndicatorSeries.Price,
   calcParams: [6, 12, 20],
   precision: 2,
   shouldOhlc: true,
@@ -35,16 +36,20 @@ const exponentialMovingAverage: IndicatorTemplate<Ema, number> = {
     { key: 'ema2', title: 'EMA12: ', type: 'line' },
     { key: 'ema3', title: 'EMA20: ', type: 'line' }
   ],
-  regenerateFigures: (params) => params.map((p, i) => ({ key: `ema${i + 1}`, title: `EMA${p}: `, type: 'line' })),
-  calc: (dataList, indicator) => {
+  regenerateFigures: (params: any[]) => {
+    return params.map((p: number, i: number) => {
+      return { key: `ema${i + 1}`, title: `EMA${p}: `, type: 'line' }
+    })
+  },
+  calc: (dataList: KLineData[], indicator: Indicator<Ema>) => {
     const { calcParams: params, figures } = indicator
     let closeSum = 0
     const emaValues: number[] = []
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const ema = {}
       const close = kLineData.close
       closeSum += close
-      params.forEach((p, index) => {
+      params.forEach((p: number, index: number) => {
         if (i >= p - 1) {
           if (i > p - 1) {
             emaValues[index] = (2 * close + (p - 1) * emaValues[index]) / (p + 1)
@@ -54,9 +59,8 @@ const exponentialMovingAverage: IndicatorTemplate<Ema, number> = {
           ema[figures[index].key] = emaValues[index]
         }
       })
-      prev[kLineData.timestamp] = ema
-      return prev
-    }, {})
+      return ema
+    })
   }
 }
 

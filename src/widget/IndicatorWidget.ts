@@ -17,7 +17,7 @@ import type DrawPane from '../pane/DrawPane'
 import { WidgetNameConstants } from './types'
 import DrawWidget from './DrawWidget'
 
-import type { YAxis } from '../component/YAxis'
+import type YAxis from '../component/YAxis'
 
 import GridView from '../view/GridView'
 import IndicatorView from '../view/IndicatorView'
@@ -36,6 +36,11 @@ export default class IndicatorWidget extends DrawWidget<DrawPane<YAxis>> {
     super(rootContainer, pane)
     this.addChild(this._tooltipView)
     this.addChild(this._overlayView)
+    this.getContainer().style.cursor = 'crosshair'
+    this.registerEvent('mouseMoveEvent', () => {
+      pane.getChart().getChartStore().getTooltipStore().setActiveIcon()
+      return false
+    })
   }
 
   getName (): string {
@@ -43,31 +48,20 @@ export default class IndicatorWidget extends DrawWidget<DrawPane<YAxis>> {
   }
 
   protected updateMain (ctx: CanvasRenderingContext2D): void {
-    if (this.getPane().getOptions().state !== 'minimize') {
-      this.updateMainContent(ctx)
-      this._indicatorView.draw(ctx)
-      this._gridView.draw(ctx)
-    }
+    this.updateMainContent(ctx)
+    this._indicatorView.draw(ctx)
+    this._gridView.draw(ctx)
   }
 
   protected createTooltipView (): IndicatorTooltipView {
     return new IndicatorTooltipView(this)
   }
 
-  protected updateMainContent (_ctx: CanvasRenderingContext2D): void {
-    // to do it
-  }
-
-  protected updateOverlayContent (_ctx: CanvasRenderingContext2D): void {
-    // to do it
-  }
+  protected updateMainContent (_ctx: CanvasRenderingContext2D): void {}
 
   override updateOverlay (ctx: CanvasRenderingContext2D): void {
-    if (this.getPane().getOptions().state !== 'minimize') {
-      this._overlayView.draw(ctx)
-      this._crosshairLineView.draw(ctx)
-      this.updateOverlayContent(ctx)
-    }
+    this._overlayView.draw(ctx)
+    this._crosshairLineView.draw(ctx)
     this._tooltipView.draw(ctx)
   }
 }

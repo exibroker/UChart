@@ -14,10 +14,10 @@
 
 import { isValid } from './utils/typeChecks'
 
-import type { EventName, MouseTouchEvent, MouseTouchEventCallback } from './EventHandler'
+import { type EventName, type MouseTouchEvent, type MouseTouchEventCallback } from './SyntheticEvent'
 
 export interface EventDispatcher {
-  dispatchEvent: (name: EventName, event: MouseTouchEvent) => boolean
+  dispatchEvent: (name: EventName, event: MouseTouchEvent, other?: number) => boolean
 }
 
 export default abstract class Eventful implements EventDispatcher {
@@ -30,33 +30,33 @@ export default abstract class Eventful implements EventDispatcher {
     return this
   }
 
-  onEvent (name: EventName, event: MouseTouchEvent): boolean {
+  onEvent (name: EventName, event: MouseTouchEvent, other?: number): boolean {
     const callback = this._callbacks.get(name)
     if (isValid(callback) && this.checkEventOn(event)) {
-      return callback(event)
+      return callback(event, other)
     }
     return false
   }
 
-  abstract checkEventOn (event: MouseTouchEvent): boolean
-
-  protected dispatchEventToChildren (name: EventName, event: MouseTouchEvent): boolean {
-    const start = this._children.length - 1
-    if (start > -1) {
-      for (let i = start; i > -1; i--) {
-        if (this._children[i].dispatchEvent(name, event)) {
-          return true
-        }
+  checkEventOn (event: MouseTouchEvent): boolean {
+    for (const eventful of this._children) {
+      if (eventful.checkEventOn(event)) {
+        return true
       }
     }
     return false
   }
 
-  dispatchEvent (name: EventName, event: MouseTouchEvent): boolean {
-    if (this.dispatchEventToChildren(name, event)) {
-      return true
+  dispatchEvent (name: EventName, event: MouseTouchEvent, other?: number): boolean {
+    const start = this._children.length - 1
+    if (start > -1) {
+      for (let i = start; i > -1; i--) {
+        if (this._children[i].dispatchEvent(name, event, other)) {
+          return true
+        }
+      }
     }
-    return this.onEvent(name, event)
+    return this.onEvent(name, event, other)
   }
 
   addChild (eventful: Eventful): this {

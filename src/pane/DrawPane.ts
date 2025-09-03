@@ -14,24 +14,24 @@
 
 import type DeepRequired from '../common/DeepRequired'
 import type Nullable from '../common/Nullable'
-import type { UpdateLevel } from '../common/Updater'
+import { type UpdateLevel } from '../common/Updater'
 import type Bounding from '../common/Bounding'
 
-import { isValid, merge } from '../common/utils/typeChecks'
+import { isString, isValid, merge } from '../common/utils/typeChecks'
 
-import type { Axis } from '../component/Axis'
+import type Axis from '../component/Axis'
 
 import type DrawWidget from '../widget/DrawWidget'
 import type YAxisWidget from '../widget/YAxisWidget'
 
 import Pane from './Pane'
-import { type PaneOptions, PANE_DEFAULT_HEIGHT, PANE_MIN_HEIGHT, PaneIdConstants } from './types'
+import { type PaneOptions, PANE_MIN_HEIGHT, PaneIdConstants } from './types'
 
 import type Chart from '../Chart'
 
 import { createDom } from '../common/utils/dom'
 import { getPixelRatio } from '../common/utils/canvas'
-import YAxisImp, { type YAxis } from '../component/YAxis'
+import type PickPartial from '../common/PickPartial'
 
 export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
   private readonly _mainWidget: DrawWidget<DrawPane<C>>
@@ -39,49 +39,27 @@ export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
 
   private _axis: C
 
-  private readonly _options: DeepRequired<PaneOptions> = {
-    id: '',
-    minHeight: PANE_MIN_HEIGHT,
-    dragEnabled: true,
-    order: 0,
-    height: PANE_DEFAULT_HEIGHT,
-    state: 'normal',
-    axis: { name: 'normal', scrollZoomEnabled: true }
-  }
+  private readonly _options: PickPartial<DeepRequired<Omit<PaneOptions, 'id' | 'height'>>, 'position'> = { minHeight: PANE_MIN_HEIGHT, dragEnabled: true, gap: { top: 0.2, bottom: 0.1 }, axisOptions: { name: 'default', scrollZoomEnabled: true } }
 
-  constructor (chart: Chart, id: string, options: Omit<PaneOptions, 'id' | 'height'>) {
-    super(chart, id)
+  constructor (rootContainer: HTMLElement, afterElement: Nullable<HTMLElement>, chart: Chart, id: string, options: Omit<PaneOptions, 'id' | 'height'>) {
+    super(rootContainer, afterElement, chart, id)
     const container = this.getContainer()
     this._mainWidget = this.createMainWidget(container)
     this._yAxisWidget = this.createYAxisWidget(container)
     this.setOptions(options)
   }
 
-  setOptions (options: PaneOptions): this {
-    const paneId = this.getId()
-    if (paneId === PaneIdConstants.CANDLE || paneId === PaneIdConstants.X_AXIS) {
-      const axisName = options.axis?.name
-      if (
-        !isValid(this._axis) ||
-        (isValid(axisName) && this._options.axis.name !== axisName)
-      ) {
-        this._axis = this.createAxisComponent(axisName ?? 'normal')
-      }
-    } else {
-      if (!isValid(this._axis)) {
-        this._axis = this.createAxisComponent('normal')
-      }
-    }
-    if (this._axis instanceof YAxisImp) {
-      this._axis.setAutoCalcTickFlag(true)
+  setOptions (options: Omit<PaneOptions, 'id' | 'height'>): this {
+    const name = options.axisOptions?.name
+    if (
+      (this._options.axisOptions.name !== name && isString(name)) ||
+      !isValid(this._axis)
+    ) {
+      this._axis = this.createAxisComponent(name ?? 'default')
     }
     merge(this._options, options)
-    this._axis.override({
-      ...this._options.axis,
-      name: options.axis?.name ?? 'normal'
-    })
-    let container: Nullable<HTMLElement> = null
-    let cursor = 'default'
+    let container: HTMLElement
+    let cursor: string
     if (this.getId() === PaneIdConstants.X_AXIS) {
       container = this.getMainWidget().getContainer()
       cursor = 'ew-resize'
@@ -89,7 +67,7 @@ export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
       container = this.getYAxisWidget()!.getContainer()
       cursor = 'ns-resize'
     }
-    if (options.axis?.scrollZoomEnabled ?? true) {
+    if (options.axisOptions?.scrollZoomEnabled ?? true) {
       container.style.cursor = cursor
     } else {
       container.style.cursor = 'default'
@@ -97,18 +75,13 @@ export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
     return this
   }
 
-  getOptions (): DeepRequired<PaneOptions> { return this._options }
+  getOptions (): PickPartial<DeepRequired<Omit<PaneOptions, 'id' | 'height'>>, 'position'> { return this._options }
 
   getAxisComponent (): C {
     return this._axis
   }
 
-  override setBounding (
-    rootBounding: Partial<Bounding>,
-    mainBounding?: Partial<Bounding>,
-    leftYAxisBounding?: Partial<Bounding>,
-    rightYAxisBounding?: Partial<Bounding>
-  ): this {
+  override setBounding (rootBounding: Partial<Bounding>, mainBounding?: Partial<Bounding>, yAxisBounding?: Partial<Bounding>): this {
     merge(this.getBounding(), rootBounding)
     const contentBounding: Partial<Bounding> = {}
     if (isValid(rootBounding.height)) {
@@ -118,30 +91,12 @@ export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
       contentBounding.top = rootBounding.top
     }
     this._mainWidget.setBounding(contentBounding)
-    const mainBoundingValid = isValid(mainBounding)
-    if (mainBoundingValid) {
+    this._yAxisWidget?.setBounding(contentBounding)
+    if (isValid(mainBounding)) {
       this._mainWidget.setBounding(mainBounding)
     }
-    if (isValid(this._yAxisWidget)) {
-      this._yAxisWidget.setBounding(contentBounding)
-      const yAxis = this._axis as unknown as YAxis
-      if (yAxis.position === 'left') {
-        if (isValid(leftYAxisBounding)) {
-          this._yAxisWidget.setBounding({ ...leftYAxisBounding, left: 0 })
-        }
-      } else {
-        if (isValid(rightYAxisBounding)) {
-          this._yAxisWidget.setBounding(rightYAxisBounding)
-          if (mainBoundingValid) {
-            this._yAxisWidget.setBounding({
-              left: (mainBounding.left ?? 0) +
-                (mainBounding.width ?? 0) +
-                (mainBounding.right ?? 0) -
-                (rightYAxisBounding.width ?? 0)
-            })
-          }
-        }
-      }
+    if (isValid(yAxisBounding)) {
+      this._yAxisWidget?.setBounding(yAxisBounding)
     }
     return this
   }
@@ -156,6 +111,7 @@ export default abstract class DrawPane<C extends Axis = Axis> extends Pane {
   }
 
   destroy (): void {
+    super.destroy()
     this._mainWidget.destroy()
     this._yAxisWidget?.destroy()
   }

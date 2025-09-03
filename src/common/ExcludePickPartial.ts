@@ -12,8 +12,6 @@
  * limitations under the License.
  */
 
-import type PickRequired from './PickRequired'
-
-type ExcludePickPartial<T, K extends keyof T> = PickRequired<Partial<T>, K>
+type ExcludePickPartial<T, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>
 
 export default ExcludePickPartial

@@ -21,12 +21,12 @@ import line from './line'
 import polygon from './polygon'
 import rect from './rect'
 import text from './text'
+import rectText from './rectText'
 import arc from './arc'
-import path from './path'
 
 const figures: Record<string, FigureInnerConstructor> = {}
 
-const extensions = [circle, line, polygon, rect, text, arc, path]
+const extensions = [circle, line, polygon, rect, text, rectText, arc]
 extensions.forEach((figure: FigureTemplate) => {
   figures[figure.name] = FigureImp.extend(figure)
 })
@@ -35,15 +35,15 @@ function getSupportedFigures (): string[] {
   return Object.keys(figures)
 }
 
-function registerFigure<A = unknown, S = unknown> (figure: FigureTemplate<A, S>): void {
+function registerFigure<A = any, S = any> (figure: FigureTemplate<A, S>): void {
   figures[figure.name] = FigureImp.extend(figure)
 }
 
-function getInnerFigureClass (name: string): Nullable<FigureInnerConstructor> {
+function getInnerFigureClass<A = any, S = any> (name: string): Nullable<FigureInnerConstructor<A, S>> {
   return figures[name] ?? null
 }
 
-function getFigureClass<A = unknown, S = unknown> (name: string): Nullable<FigureConstructor<A, S>> {
+function getFigureClass<A = any, S = any> (name: string): Nullable<FigureConstructor<A, S>> {
   return figures[name] ?? null
 }
 

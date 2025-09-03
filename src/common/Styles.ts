@@ -13,8 +13,7 @@
  */
 
 import type Nullable from './Nullable'
-import type { KLineData, NeighborData } from './Data'
-import { hexToRgb } from './utils/color'
+import type KLineData from './KLineData'
 
 export interface Margin {
   marginLeft: number
@@ -40,7 +39,10 @@ export interface Offset {
 /**
  * line type
  */
-export type LineType = 'dashed' | 'solid'
+export enum LineType {
+  Dashed = 'dashed',
+  Solid = 'solid'
+}
 
 export interface LineStyle {
   style: LineType
@@ -57,15 +59,11 @@ export interface StateLineStyle extends LineStyle {
   show: boolean
 }
 
-export type PathType = 'stroke' | 'fill'
-
-export interface PathStyle {
-  style: PathType
-  color: string
-  lineWidth: number
+export enum PolygonType {
+  Stroke = 'stroke',
+  Fill = 'fill',
+  StrokeFill = 'stroke_fill'
 }
-
-export type PolygonType = PathType | 'stroke_fill'
 
 export interface PolygonStyle {
   style: PolygonType
@@ -77,7 +75,7 @@ export interface PolygonStyle {
 }
 
 export interface RectStyle extends PolygonStyle {
-  borderRadius: number | number[]
+  borderRadius: number
 }
 
 export interface TextStyle extends Padding {
@@ -90,19 +88,38 @@ export interface TextStyle extends Padding {
   borderDashedValue: number[]
   borderSize: number
   borderColor: string
-  borderRadius: number | number[]
+  borderRadius: number
   backgroundColor: string | CanvasGradient
 }
+
+/**
+ * @deprecated
+ * Starting from v10, it will be deleted
+ */
+export type RectTextStyle = TextStyle
 
 export interface StateTextStyle extends TextStyle {
   show: boolean
 }
 
+/**
+ * @deprecated
+ * Starting from v10, it will be deleted
+ */
+export type StateRectTextStyle = StateTextStyle
+
 export type LastValueMarkTextStyle = Omit<StateTextStyle, 'backgroundColor'>
 
-export type TooltipShowRule = 'always' | 'follow_cross' | 'none'
+export enum TooltipShowRule {
+  Always = 'always',
+  FollowCross = 'follow_cross',
+  None = 'none'
+}
 
-export type TooltipShowType = 'standard' | 'rect'
+export enum TooltipShowType {
+  Standard = 'standard',
+  Rect = 'rect'
+}
 
 export interface ChangeColor {
   upColor: string
@@ -115,29 +132,6 @@ export interface GradientColor {
   color: string
 }
 
-export type FeatureType = 'path' | 'icon_font'
-
-export interface FeaturePathStyle extends Omit<PathStyle, 'color'> {
-  path: string
-}
-
-export interface FeatureIconFontStyle {
-  family: string
-  code: string
-}
-
-export interface FeatureStyle extends Padding, Margin {
-  id: string
-  backgroundColor: string
-  activeBackgroundColor: string
-  size: number
-  color: string
-  activeColor: string
-  borderRadius: number | number[]
-  type: FeatureType
-  content: FeaturePathStyle | FeatureIconFontStyle
-}
-
 export interface GridStyle {
   show: boolean
   horizontal: StateLineStyle
@@ -146,30 +140,51 @@ export interface GridStyle {
 
 export type TooltipTextStyle = Pick<TextStyle, 'color' | 'size' | 'family' | 'weight'> & Margin
 
-export type TooltipTitleStyle = TooltipTextStyle & { show: boolean }
-
-export type TooltipLegendStyle = TooltipTextStyle & { defaultValue: string }
-
 export interface TooltipLegendChild {
   text: string
   color: string
 }
+
+/**
+ * @deprecated
+ * Starting from v10, it will be deleted
+ */
+export type TooltipDataChild = TooltipLegendChild
 
 export interface TooltipLegend {
   title: string | TooltipLegendChild
   value: string | TooltipLegendChild
 }
 
-export type TooltipFeaturePosition = 'left' | 'middle' | 'right'
+/**
+ * @deprecated
+ * Starting from v10, it will be deleted
+ */
+export type TooltipData = TooltipLegend
 
-export interface TooltipFeatureStyle extends FeatureStyle {
-  position: TooltipFeaturePosition
+export enum TooltipIconPosition {
+  Left = 'left',
+  Middle = 'middle',
+  Right = 'right'
+}
+export interface TooltipIconStyle extends Padding, Margin {
+  id: string
+  position: TooltipIconPosition
+  color: string
+  activeColor: string
+  size: number
+  fontFamily: string
+  icon: string
+  backgroundColor: string
+  activeBackgroundColor: string
 }
 
-export interface TooltipStyle extends Offset {
+export interface TooltipStyle {
   showRule: TooltipShowRule
   showType: TooltipShowType
-  features: TooltipFeatureStyle[]
+  defaultValue: string
+  text: TooltipTextStyle
+  icons: TooltipIconStyle[]
 }
 
 export interface CandleAreaPointStyle {
@@ -201,19 +216,10 @@ export interface CandleHighLowPriceMarkStyle {
 }
 
 export type CandleLastPriceMarkLineStyle = Omit<StateLineStyle, 'color'>
-
-export type CandleLastPriceMarkExtendTextPosition = 'above_price' | 'below_price'
-
-export type CandleLastPriceMarkExtendTextStyle = LastValueMarkTextStyle & {
-  position: CandleLastPriceMarkExtendTextPosition
-  updateInterval: number
-}
 export interface CandleLastPriceMarkStyle extends ChangeColor {
   show: boolean
-  compareRule: CandleColorCompareRule
   line: CandleLastPriceMarkLineStyle
   text: LastValueMarkTextStyle
-  extendTexts: CandleLastPriceMarkExtendTextStyle[]
 }
 
 export interface CandlePriceMarkStyle {
@@ -223,26 +229,38 @@ export interface CandlePriceMarkStyle {
   last: CandleLastPriceMarkStyle
 }
 
-export type CandleTooltipRectPosition = 'fixed' | 'pointer'
+export enum CandleTooltipRectPosition {
+  Fixed = 'fixed',
+  Pointer = 'pointer'
+}
 
 export interface CandleTooltipRectStyle extends Omit<RectStyle, 'style' | 'borderDashedValue' | 'borderStyle'>, Padding, Offset {
   position: CandleTooltipRectPosition
 }
 
-export type CandleTooltipLegendsCustomCallback = (data: NeighborData<Nullable<KLineData>>, styles: CandleStyle) => TooltipLegend[]
+export interface CandleTooltipCustomCallbackData {
+  prev: Nullable<KLineData>
+  current: KLineData
+  next: Nullable<KLineData>
+}
 
-export interface CandleTooltipStyle extends TooltipStyle {
-  title: TooltipTitleStyle & { template: string }
-  legend: TooltipLegendStyle & { template: CandleTooltipLegendsCustomCallback | TooltipLegend[] }
+export type CandleTooltipCustomCallback = (data: CandleTooltipCustomCallbackData, styles: CandleStyle) => TooltipLegend[]
+
+export interface CandleTooltipStyle extends TooltipStyle, Offset {
+  custom: CandleTooltipCustomCallback | TooltipLegend[]
   rect: CandleTooltipRectStyle
 }
 
-export type CandleType = 'candle_solid' | 'candle_stroke' | 'candle_up_stroke' | 'candle_down_stroke' | 'ohlc' | 'area'
-
-export type CandleColorCompareRule = 'current_open' | 'previous_close'
+export enum CandleType {
+  CandleSolid = 'candle_solid',
+  CandleStroke = 'candle_stroke',
+  CandleUpStroke = 'candle_up_stroke',
+  CandleDownStroke = 'candle_down_stroke',
+  Ohlc = 'ohlc',
+  Area = 'area'
+}
 
 export interface CandleBarColor extends ChangeColor {
-  compareRule: CandleColorCompareRule
   upBorderColor: string
   downBorderColor: string
   noChangeBorderColor: string
@@ -266,19 +284,19 @@ export interface IndicatorLastValueMarkStyle {
   text: LastValueMarkTextStyle
 }
 
-export interface IndicatorTooltipStyle extends TooltipStyle {
-  title: TooltipTitleStyle & { showName: boolean; showParams: boolean }
-  legend: TooltipLegendStyle
+export interface IndicatorTooltipStyle extends TooltipStyle, Offset {
+  showName: boolean
+  showParams: boolean
 }
 
 export interface IndicatorStyle {
-  ohlc: Pick<CandleBarColor, 'compareRule' | 'upColor' | 'downColor' | 'noChangeColor'>
+  ohlc: ChangeColor
   bars: IndicatorPolygonStyle[]
   lines: SmoothLineStyle[]
   circles: IndicatorPolygonStyle[]
   lastValueMark: IndicatorLastValueMarkStyle
   tooltip: IndicatorTooltipStyle
-  [key: string]: unknown
+  [key: string]: any
 }
 
 export type AxisLineStyle = Omit<StateLineStyle, 'style' | 'dashedValue'>
@@ -300,6 +318,26 @@ export interface AxisStyle {
   tickText: AxisTickTextStyle
 }
 
+export type XAxisStyle = AxisStyle
+
+export enum YAxisPosition {
+  Left = 'left',
+  Right = 'right'
+}
+
+export enum YAxisType {
+  Normal = 'normal',
+  Percentage = 'percentage',
+  Log = 'log'
+}
+
+export interface YAxisStyle extends AxisStyle {
+  type: YAxisType
+  position: YAxisPosition
+  inside: boolean
+  reverse: boolean
+}
+
 export interface CrosshairDirectionStyle {
   show: boolean
   line: StateLineStyle
@@ -308,7 +346,7 @@ export interface CrosshairDirectionStyle {
 
 export interface CrosshairStyle {
   show: boolean
-  horizontal: CrosshairDirectionStyle & { features: TooltipFeatureStyle[] }
+  horizontal: CrosshairDirectionStyle
   vertical: CrosshairDirectionStyle
 }
 
@@ -331,7 +369,12 @@ export interface OverlayStyle {
   circle: PolygonStyle
   arc: LineStyle
   text: TextStyle
-  [key: string]: unknown
+  /**
+   * @deprecated
+   * Starting from v10, it will be deleted
+   */
+  rectText: TextStyle
+  [key: string]: any
 }
 
 export interface SeparatorStyle {
@@ -345,38 +388,41 @@ export interface Styles {
   grid: GridStyle
   candle: CandleStyle
   indicator: IndicatorStyle
-  xAxis: AxisStyle
-  yAxis: AxisStyle
+  xAxis: XAxisStyle
+  yAxis: YAxisStyle
   separator: SeparatorStyle
   crosshair: CrosshairStyle
   overlay: OverlayStyle
 }
 
-const Color = {
-  RED: '#F92855',
-  GREEN: '#2DC08E',
-  WHITE: '#FFFFFF',
-  GREY: '#76808F',
-  BLUE: '#1677FF'
+const red = '#F92855'
+const alphaRed = 'rgba(249, 40, 85, .7)'
+const green = '#2DC08E'
+const alphaGreen = 'rgba(45, 192, 142, .7)'
+const grey = '#888888'
+const white = '#FFFFFF'
+const blue = '#1677FF'
+const textColor = '#76808F'
+const axisLineColor = '#DDDDDD'
+
+function getAlphaBlue (alpha: number): string {
+  return `rgba(22, 119, 255, ${alpha})`
 }
 
 function getDefaultGridStyle (): GridStyle {
-  return {
-    show: true,
-    horizontal: {
+  function item (): StateLineStyle {
+    return {
       show: true,
       size: 1,
       color: '#EDEDED',
-      style: 'dashed',
-      dashedValue: [2, 2]
-    },
-    vertical: {
-      show: true,
-      size: 1,
-      color: '#EDEDED',
-      style: 'dashed',
+      style: LineType.Dashed,
       dashedValue: [2, 2]
     }
+  }
+  return {
+    show: true,
+    horizontal: item(),
+    vertical: item()
   }
 }
 
@@ -387,43 +433,42 @@ function getDefaultGridStyle (): GridStyle {
 function getDefaultCandleStyle (): CandleStyle {
   const highLow = {
     show: true,
-    color: Color.GREY,
+    color: textColor,
     textOffset: 5,
     textSize: 10,
     textFamily: 'Helvetica Neue',
     textWeight: 'normal'
   }
   return {
-    type: 'candle_solid',
+    type: CandleType.CandleSolid,
     bar: {
-      compareRule: 'current_open',
-      upColor: Color.GREEN,
-      downColor: Color.RED,
-      noChangeColor: Color.GREY,
-      upBorderColor: Color.GREEN,
-      downBorderColor: Color.RED,
-      noChangeBorderColor: Color.GREY,
-      upWickColor: Color.GREEN,
-      downWickColor: Color.RED,
-      noChangeWickColor: Color.GREY
+      upColor: green,
+      downColor: red,
+      noChangeColor: grey,
+      upBorderColor: green,
+      downBorderColor: red,
+      noChangeBorderColor: grey,
+      upWickColor: green,
+      downWickColor: red,
+      noChangeWickColor: grey
     },
     area: {
       lineSize: 2,
-      lineColor: Color.BLUE,
+      lineColor: blue,
       smooth: false,
       value: 'close',
       backgroundColor: [{
         offset: 0,
-        color: hexToRgb(Color.BLUE, 0.01)
+        color: getAlphaBlue(0.01)
       }, {
         offset: 1,
-        color: hexToRgb(Color.BLUE, 0.2)
+        color: getAlphaBlue(0.2)
       }],
       point: {
         show: true,
-        color: Color.BLUE,
+        color: blue,
         radius: 4,
-        rippleColor: hexToRgb(Color.BLUE, 0.3),
+        rippleColor: getAlphaBlue(0.3),
         rippleRadius: 8,
         animation: true,
         animationDuration: 1000
@@ -435,34 +480,32 @@ function getDefaultCandleStyle (): CandleStyle {
       low: { ...highLow },
       last: {
         show: true,
-        compareRule: 'current_open',
-        upColor: Color.GREEN,
-        downColor: Color.RED,
-        noChangeColor: Color.GREY,
+        upColor: green,
+        downColor: red,
+        noChangeColor: grey,
         line: {
           show: true,
-          style: 'dashed',
+          style: LineType.Dashed,
           dashedValue: [4, 4],
           size: 1
         },
         text: {
           show: true,
-          style: 'fill',
+          style: PolygonType.Fill,
           size: 12,
           paddingLeft: 4,
           paddingTop: 4,
           paddingRight: 4,
           paddingBottom: 4,
           borderColor: 'transparent',
-          borderStyle: 'solid',
+          borderStyle: LineType.Solid,
           borderSize: 0,
           borderDashedValue: [2, 2],
-          color: Color.WHITE,
+          color: white,
           family: 'Helvetica Neue',
           weight: 'normal',
           borderRadius: 2
-        },
-        extendTexts: []
+        }
       }
     },
     tooltip: {
@@ -470,10 +513,19 @@ function getDefaultCandleStyle (): CandleStyle {
       offsetTop: 6,
       offsetRight: 4,
       offsetBottom: 6,
-      showRule: 'always',
-      showType: 'standard',
+      showRule: TooltipShowRule.Always,
+      showType: TooltipShowType.Standard,
+      custom: [
+        { title: 'time', value: '{time}' },
+        { title: 'open', value: '{open}' },
+        { title: 'high', value: '{high}' },
+        { title: 'low', value: '{low}' },
+        { title: 'close', value: '{close}' },
+        { title: 'volume', value: '{volume}' }
+      ],
+      defaultValue: 'n/a',
       rect: {
-        position: 'fixed',
+        position: CandleTooltipRectPosition.Fixed,
         paddingLeft: 4,
         paddingRight: 4,
         paddingTop: 4,
@@ -487,38 +539,17 @@ function getDefaultCandleStyle (): CandleStyle {
         borderColor: '#F2F3F5',
         color: '#FEFEFE'
       },
-      title: {
-        show: true,
-        size: 14,
-        family: 'Helvetica Neue',
-        weight: 'normal',
-        color: Color.GREY,
-        marginLeft: 8,
-        marginTop: 4,
-        marginRight: 8,
-        marginBottom: 4,
-        template: '{ticker} · {period}'
-      },
-      legend: {
+      text: {
         size: 12,
         family: 'Helvetica Neue',
         weight: 'normal',
-        color: Color.GREY,
+        color: textColor,
         marginLeft: 8,
         marginTop: 4,
         marginRight: 8,
-        marginBottom: 4,
-        defaultValue: 'n/a',
-        template: [
-          { title: 'time', value: '{time}' },
-          { title: 'open', value: '{open}' },
-          { title: 'high', value: '{high}' },
-          { title: 'low', value: '{low}' },
-          { title: 'close', value: '{close}' },
-          { title: 'volume', value: '{volume}' }
-        ]
+        marginBottom: 4
       },
-      features: []
+      icons: []
     }
   }
 }
@@ -527,50 +558,49 @@ function getDefaultCandleStyle (): CandleStyle {
  * Get default indicator style
  */
 function getDefaultIndicatorStyle (): IndicatorStyle {
-  const alphaGreen = hexToRgb(Color.GREEN, 0.7)
-  const alphaRed = hexToRgb(Color.RED, 0.7)
+  const lines = ['#FF9600', '#935EBD', blue, '#E11D74', '#01C5C4'].map(color => ({
+    style: LineType.Solid,
+    smooth: false,
+    size: 1,
+    dashedValue: [2, 2],
+    color
+  }))
+
   return {
     ohlc: {
-      compareRule: 'current_open',
       upColor: alphaGreen,
       downColor: alphaRed,
-      noChangeColor: Color.GREY
+      noChangeColor: grey
     },
     bars: [{
-      style: 'fill',
-      borderStyle: 'solid',
+      style: PolygonType.Fill,
+      borderStyle: LineType.Solid,
       borderSize: 1,
       borderDashedValue: [2, 2],
       upColor: alphaGreen,
       downColor: alphaRed,
-      noChangeColor: Color.GREY
+      noChangeColor: grey
     }],
-    lines: ['#FF9600', '#935EBD', Color.BLUE, '#E11D74', '#01C5C4'].map(color => ({
-      style: 'solid',
-      smooth: false,
-      size: 1,
-      dashedValue: [2, 2],
-      color
-    })),
+    lines,
     circles: [{
-      style: 'fill',
-      borderStyle: 'solid',
+      style: PolygonType.Fill,
+      borderStyle: LineType.Solid,
       borderSize: 1,
       borderDashedValue: [2, 2],
       upColor: alphaGreen,
       downColor: alphaRed,
-      noChangeColor: Color.GREY
+      noChangeColor: grey
     }],
     lastValueMark: {
       show: false,
       text: {
         show: false,
-        style: 'fill',
-        color: Color.WHITE,
+        style: PolygonType.Fill,
+        color: white,
         size: 12,
         family: 'Helvetica Neue',
         weight: 'normal',
-        borderStyle: 'solid',
+        borderStyle: LineType.Solid,
         borderColor: 'transparent',
         borderSize: 0,
         borderDashedValue: [2, 2],
@@ -586,208 +616,183 @@ function getDefaultIndicatorStyle (): IndicatorStyle {
       offsetTop: 6,
       offsetRight: 4,
       offsetBottom: 6,
-      showRule: 'always',
-      showType: 'standard',
-      title: {
-        show: true,
-        showName: true,
-        showParams: true,
+      showRule: TooltipShowRule.Always,
+      showType: TooltipShowType.Standard,
+      showName: true,
+      showParams: true,
+      defaultValue: 'n/a',
+      text: {
         size: 12,
         family: 'Helvetica Neue',
         weight: 'normal',
-        color: Color.GREY,
+        color: textColor,
         marginLeft: 8,
         marginTop: 4,
         marginRight: 8,
         marginBottom: 4
       },
-      legend: {
-        size: 12,
-        family: 'Helvetica Neue',
-        weight: 'normal',
-        color: Color.GREY,
-        marginLeft: 8,
-        marginTop: 4,
-        marginRight: 8,
-        marginBottom: 4,
-        defaultValue: 'n/a'
-      },
-      features: []
+      icons: []
     }
   }
 }
 
-function getDefaultAxisStyle (): AxisStyle {
+function getDefaultXAxisStyle (): XAxisStyle {
   return {
     show: true,
     size: 'auto',
     axisLine: {
       show: true,
-      color: '#DDDDDD',
+      color: axisLineColor,
       size: 1
     },
     tickText: {
       show: true,
-      color: Color.GREY,
+      color: textColor,
       size: 12,
       family: 'Helvetica Neue',
       weight: 'normal',
       marginStart: 4,
-      marginEnd: 6
+      marginEnd: 4
     },
     tickLine: {
       show: true,
       size: 1,
       length: 3,
-      color: '#DDDDDD'
+      color: axisLineColor
     }
   }
 }
 
+function getDefaultYAxisStyle (): YAxisStyle {
+  const style = getDefaultXAxisStyle() as YAxisStyle
+  style.type = YAxisType.Normal
+  style.position = YAxisPosition.Right
+  style.inside = false
+  style.reverse = false
+  return style
+}
+
 function getDefaultCrosshairStyle (): CrosshairStyle {
-  return {
-    show: true,
-    horizontal: {
+  function item (): CrosshairDirectionStyle {
+    return {
       show: true,
       line: {
         show: true,
-        style: 'dashed',
+        style: LineType.Dashed,
         dashedValue: [4, 2],
         size: 1,
-        color: Color.GREY
+        color: textColor
       },
       text: {
         show: true,
-        style: 'fill',
-        color: Color.WHITE,
+        style: PolygonType.Fill,
+        color: white,
         size: 12,
         family: 'Helvetica Neue',
         weight: 'normal',
-        borderStyle: 'solid',
+        borderStyle: LineType.Solid,
         borderDashedValue: [2, 2],
         borderSize: 1,
-        borderColor: Color.GREY,
+        borderColor: textColor,
         borderRadius: 2,
         paddingLeft: 4,
         paddingRight: 4,
         paddingTop: 4,
         paddingBottom: 4,
-        backgroundColor: Color.GREY
-      },
-      features: []
-    },
-    vertical: {
-      show: true,
-      line: {
-        show: true,
-        style: 'dashed',
-        dashedValue: [4, 2],
-        size: 1,
-        color: Color.GREY
-      },
-      text: {
-        show: true,
-        style: 'fill',
-        color: Color.WHITE,
-        size: 12,
-        family: 'Helvetica Neue',
-        weight: 'normal',
-        borderStyle: 'solid',
-        borderDashedValue: [2, 2],
-        borderSize: 1,
-        borderColor: Color.GREY,
-        borderRadius: 2,
-        paddingLeft: 4,
-        paddingRight: 4,
-        paddingTop: 4,
-        paddingBottom: 4,
-        backgroundColor: Color.GREY
+        backgroundColor: textColor
       }
     }
+  }
+
+  return {
+    show: true,
+    horizontal: item(),
+    vertical: item()
   }
 }
 
 function getDefaultOverlayStyle (): OverlayStyle {
-  const pointBorderColor = hexToRgb(Color.BLUE, 0.35)
-  const alphaBg = hexToRgb(Color.BLUE, 0.25)
+  const pointBorderColor = getAlphaBlue(0.35)
+  const alphaBg = getAlphaBlue(0.25)
   function text (): TextStyle {
     return {
-      style: 'fill',
-      color: Color.WHITE,
+      style: PolygonType.Fill,
+      color: white,
       size: 12,
       family: 'Helvetica Neue',
       weight: 'normal',
-      borderStyle: 'solid',
+      borderStyle: LineType.Solid,
       borderDashedValue: [2, 2],
       borderSize: 1,
       borderRadius: 2,
-      borderColor: Color.BLUE,
+      borderColor: blue,
       paddingLeft: 4,
       paddingRight: 4,
       paddingTop: 4,
       paddingBottom: 4,
-      backgroundColor: Color.BLUE
+      backgroundColor: blue
     }
   }
   return {
     point: {
-      color: Color.BLUE,
+      color: blue,
       borderColor: pointBorderColor,
       borderSize: 1,
       radius: 5,
-      activeColor: Color.BLUE,
+      activeColor: blue,
       activeBorderColor: pointBorderColor,
       activeBorderSize: 3,
       activeRadius: 5
     },
     line: {
-      style: 'solid',
+      style: LineType.Solid,
       smooth: false,
-      color: Color.BLUE,
+      color: blue,
       size: 1,
       dashedValue: [2, 2]
     },
     rect: {
-      style: 'fill',
+      style: PolygonType.Fill,
       color: alphaBg,
-      borderColor: Color.BLUE,
+      borderColor: blue,
       borderSize: 1,
       borderRadius: 0,
-      borderStyle: 'solid',
+      borderStyle: LineType.Solid,
       borderDashedValue: [2, 2]
     },
     polygon: {
-      style: 'fill',
-      color: Color.BLUE,
-      borderColor: Color.BLUE,
+      style: PolygonType.Fill,
+      color: blue,
+      borderColor: blue,
       borderSize: 1,
-      borderStyle: 'solid',
+      borderStyle: LineType.Solid,
       borderDashedValue: [2, 2]
     },
     circle: {
-      style: 'fill',
+      style: PolygonType.Fill,
       color: alphaBg,
-      borderColor: Color.BLUE,
+      borderColor: blue,
       borderSize: 1,
-      borderStyle: 'solid',
+      borderStyle: LineType.Solid,
       borderDashedValue: [2, 2]
     },
     arc: {
-      style: 'solid',
-      color: Color.BLUE,
+      style: LineType.Solid,
+      color: blue,
       size: 1,
       dashedValue: [2, 2]
     },
-    text: text()
+    text: text(),
+    rectText: text()
   }
 }
 
 function getDefaultSeparatorStyle (): SeparatorStyle {
   return {
     size: 1,
-    color: '#DDDDDD',
+    color: axisLineColor,
     fill: true,
-    activeBackgroundColor: hexToRgb(Color.BLUE, 0.08)
+    activeBackgroundColor: getAlphaBlue(0.08)
   }
 }
 
@@ -796,8 +801,8 @@ export function getDefaultStyles (): Styles {
     grid: getDefaultGridStyle(),
     candle: getDefaultCandleStyle(),
     indicator: getDefaultIndicatorStyle(),
-    xAxis: getDefaultAxisStyle(),
-    yAxis: getDefaultAxisStyle(),
+    xAxis: getDefaultXAxisStyle(),
+    yAxis: getDefaultYAxisStyle(),
     separator: getDefaultSeparatorStyle(),
     crosshair: getDefaultCrosshairStyle(),
     overlay: getDefaultOverlayStyle()

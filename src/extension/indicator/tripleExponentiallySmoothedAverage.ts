@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Trix {
   trix?: number
@@ -32,7 +33,7 @@ interface Trix {
  * TRMA:MA(TRIX,M)
  *
  */
-const tripleExponentiallySmoothedAverage: IndicatorTemplate<Trix, number> = {
+const tripleExponentiallySmoothedAverage: IndicatorTemplate<Trix> = {
   name: 'TRIX',
   shortName: 'TRIX',
   calcParams: [12, 9],
@@ -40,18 +41,17 @@ const tripleExponentiallySmoothedAverage: IndicatorTemplate<Trix, number> = {
     { key: 'trix', title: 'TRIX: ', type: 'line' },
     { key: 'maTrix', title: 'MATRIX: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Trix>) => {
+    const params = indicator.calcParams as number[]
     let closeSum = 0
-    let ema1 = 0
-    let ema2 = 0
-    let oldTr = 0
+    let ema1: number
+    let ema2: number
+    let oldTr: number
     let ema1Sum = 0
     let ema2Sum = 0
     let trixSum = 0
-    const trixList: Trix[] = []
-    const result: Record<number, Trix> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Trix[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const trix: Trix = {}
       const close = kLineData.close
       closeSum += close
@@ -70,7 +70,7 @@ const tripleExponentiallySmoothedAverage: IndicatorTemplate<Trix, number> = {
           }
           ema2Sum += ema2
           if (i >= params[0] * 3 - 3) {
-            let tr = 0
+            let tr: number
             let trixValue = 0
             if (i > params[0] * 3 - 3) {
               tr = (2 * ema2 + (params[0] - 1) * oldTr) / (params[0] + 1)
@@ -83,13 +83,12 @@ const tripleExponentiallySmoothedAverage: IndicatorTemplate<Trix, number> = {
             trixSum += trixValue
             if (i >= params[0] * 3 + params[1] - 4) {
               trix.maTrix = trixSum / params[1]
-              trixSum -= (trixList[i - (params[1] - 1)].trix ?? 0)
+              trixSum -= (result[i - (params[1] - 1)].trix ?? 0)
             }
           }
         }
       }
-      trixList.push(trix)
-      result[kLineData.timestamp] = trix
+      result.push(trix)
     })
     return result
   }

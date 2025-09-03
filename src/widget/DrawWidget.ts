@@ -91,9 +91,6 @@ export default abstract class DrawWidget<P extends DrawPane = DrawPane> extends 
         this._overlayCanvas.update(width, height)
         break
       }
-      default: {
-        break
-      }
     }
   }
 

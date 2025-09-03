@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate, IndicatorSeries } from '../../component/Indicator'
 
 interface Sma {
   sma?: number
@@ -21,21 +22,21 @@ interface Sma {
 /**
  * sma
  */
-const simpleMovingAverage: IndicatorTemplate<Sma, number> = {
+const simpleMovingAverage: IndicatorTemplate<Sma> = {
   name: 'SMA',
   shortName: 'SMA',
-  series: 'price',
+  series: IndicatorSeries.Price,
   calcParams: [12, 2],
   precision: 2,
   figures: [
     { key: 'sma', title: 'SMA: ', type: 'line' }
   ],
   shouldOhlc: true,
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Sma>) => {
+    const params = indicator.calcParams as number[]
     let closeSum = 0
     let smaValue = 0
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const sma: Sma = {}
       const close = kLineData.close
       closeSum += close
@@ -47,9 +48,8 @@ const simpleMovingAverage: IndicatorTemplate<Sma, number> = {
         }
         sma.sma = smaValue
       }
-      prev[kLineData.timestamp] = sma
-      return prev
-    }, {})
+      return sma
+    })
   }
 }
 

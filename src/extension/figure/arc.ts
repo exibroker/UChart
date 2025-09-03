@@ -14,16 +14,17 @@
 
 import type Coordinate from '../../common/Coordinate'
 import { getDistance } from '../../common/Coordinate'
-import type { LineStyle } from '../../common/Styles'
+import { type LineStyle, LineType } from '../../common/Styles'
 
 import { type FigureTemplate, DEVIATION } from '../../component/Figure'
 
-import type { CircleAttrs } from './circle'
+import { type CircleAttrs } from './circle'
 
 export function checkCoordinateOnArc (coordinate: Coordinate, attrs: ArcAttrs | ArcAttrs[]): boolean {
   let arcs: ArcAttrs[] = []
   arcs = arcs.concat(attrs)
-  for (const arc of arcs) {
+  for (let i = 0; i < arcs.length; i++) {
+    const arc = arcs[i]
     if (Math.abs(getDistance(coordinate, arc) - arc.r) < DEVIATION) {
       const { r, startAngle, endAngle } = arc
       const startCoordinateX = r * Math.cos(startAngle) + arc.x
@@ -47,10 +48,10 @@ export function checkCoordinateOnArc (coordinate: Coordinate, attrs: ArcAttrs | 
 export function drawArc (ctx: CanvasRenderingContext2D, attrs: ArcAttrs | ArcAttrs[], styles: Partial<LineStyle>): void {
   let arcs: ArcAttrs[] = []
   arcs = arcs.concat(attrs)
-  const { style = 'solid', size = 1, color = 'currentColor', dashedValue = [2, 2] } = styles
+  const { style = LineType.Solid, size = 1, color = 'currentColor', dashedValue = [2, 2] } = styles
   ctx.lineWidth = size
   ctx.strokeStyle = color
-  if (style === 'dashed') {
+  if (style === LineType.Dashed) {
     ctx.setLineDash(dashedValue)
   } else {
     ctx.setLineDash([])

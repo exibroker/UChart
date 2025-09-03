@@ -61,13 +61,13 @@ export default class Canvas {
   constructor (style: Partial<CSSStyleDeclaration>, listener: DrawListener) {
     this._listener = listener
     this._element = createDom('canvas', style)
-    this._ctx = this._element.getContext('2d')!
+    this._ctx = this._element.getContext('2d', { willReadFrequently: true })!
     isSupportedDevicePixelContentBox().then(result => {
       this._supportedDevicePixelContentBox = result
       if (result) {
         this._resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
           const entry = entries.find((entry: ResizeObserverEntry) => entry.target === this._element)
-          const size = entry?.devicePixelContentBoxSize[0]
+          const size = entry?.devicePixelContentBoxSize?.[0]
           if (isValid(size)) {
             this._nextPixelWidth = size.inlineSize
             this._nextPixelHeight = size.blockSize
@@ -79,24 +79,23 @@ export default class Canvas {
         this._resizeObserver.observe(this._element, { box: 'device-pixel-content-box' })
       } else {
         this._mediaQueryList = window.matchMedia(`(resolution: ${getPixelRatio(this._element)}dppx)`)
-        // eslint-disable-next-line @typescript-eslint/no-deprecated -- ignore
         this._mediaQueryList.addListener(this._mediaQueryListener)
       }
-    }).catch((_: unknown) => false)
+    }).catch(_ => false)
   }
 
   private _resetPixelRatio (): void {
     this._executeListener(() => {
       const width = this._element.clientWidth
       const height = this._element.clientHeight
+      const horizontalPixelRatio = this._nextPixelWidth / width
+      const verticalPixelRatio = this._nextPixelHeight / height
       this._width = width
       this._height = height
       this._pixelWidth = this._nextPixelWidth
       this._pixelHeight = this._nextPixelHeight
       this._element.width = this._nextPixelWidth
       this._element.height = this._nextPixelHeight
-      const horizontalPixelRatio = this._nextPixelWidth / width
-      const verticalPixelRatio = this._nextPixelHeight / height
       this._ctx.scale(horizontalPixelRatio, verticalPixelRatio)
     })
   }
@@ -140,7 +139,6 @@ export default class Canvas {
       this._resizeObserver.unobserve(this._element)
     }
     if (isValid(this._mediaQueryList)) {
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- ignore
       this._mediaQueryList.removeListener(this._mediaQueryListener)
     }
   }

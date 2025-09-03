@@ -14,15 +14,6 @@
 
 import { isNumber, isValid } from './typeChecks'
 
-export interface DateTime {
-  YYYY: string
-  MM: string
-  DD: string
-  HH: string
-  mm: string
-  ss: string
-}
-
 const reEscapeChar = /\\(\\)?/g
 const rePropName = RegExp(
   '[^.[\\]]+' + '|' +
@@ -36,12 +27,12 @@ const rePropName = RegExp(
 export function formatValue (data: unknown, key: string, defaultValue?: unknown): unknown {
   if (isValid(data)) {
     const path: string[] = []
-    key.replace(rePropName, (subString: string, ...args: unknown[]) => {
+    key.replace(rePropName, (subString: string, ...args: any[]) => {
       let k = subString
       if (isValid(args[1])) {
-        k = (args[2] as string).replace(reEscapeChar, '$1')
+        k = args[2].replace(reEscapeChar, '$1')
       } else if (isValid(args[0])) {
-        k = (args[0] as string).trim()
+        k = args[0].trim()
       }
       path.push(k)
       return ''
@@ -57,7 +48,7 @@ export function formatValue (data: unknown, key: string, defaultValue?: unknown)
   return defaultValue ?? '--'
 }
 
-export function formatTimestampToDateTime (dateTimeFormat: Intl.DateTimeFormat, timestamp: number): DateTime {
+export function formatDate (dateTimeFormat: Intl.DateTimeFormat, timestamp: number, format: string): string {
   const date: Record<string, string> = {}
   dateTimeFormat.formatToParts(new Date(timestamp)).forEach(({ type, value }) => {
     switch (type) {
@@ -85,16 +76,9 @@ export function formatTimestampToDateTime (dateTimeFormat: Intl.DateTimeFormat, 
         date.ss = value
         break
       }
-      default: { break }
     }
   })
-  return date as unknown as DateTime
-}
-
-export function formatTimestampByTemplate (dateTimeFormat: Intl.DateTimeFormat, timestamp: number, template: string): string {
-  const date = formatTimestampToDateTime(dateTimeFormat, timestamp)
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ignore
-  return template.replace(/YYYY|MM|DD|HH|mm|ss/g, key => date[key])
+  return format.replace(/YYYY|MM|DD|HH|mm|ss/g, key => date[key])
 }
 
 export function formatPrecision (value: string | number, precision?: number): string {
@@ -138,24 +122,13 @@ export function formatFoldDecimal (value: string | number, threshold: number): s
   const reg = new RegExp('\\.0{' + threshold + ',}[1-9][0-9]*$')
   if (reg.test(vl)) {
     const result = vl.split('.')
-    const lastIndex = result.length - 1
-    const v = result[lastIndex]
-    const match = /0*/.exec(v)
+    const v = result[result.length - 1]
+    const match = v.match(/0*/)
     if (isValid(match)) {
       const count = match[0].length
-      result[lastIndex] = v.replace(/0*/, `0{${count}}`)
+      result[result.length - 1] = v.replace(/0*/, `0{${count}}`)
       return result.join('.')
     }
   }
   return vl
-}
-
-export function formatTemplateString (template: string, params: Record<string, unknown>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => {
-    const value = params[key as string]
-    if (isValid(value)) {
-      return value as string
-    }
-    return `{${key}}`
-  })
 }

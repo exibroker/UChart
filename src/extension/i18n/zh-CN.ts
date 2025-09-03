@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import type { Locales } from '../../Options'
+import { type Locales } from '../../Options'
 
 const zhCN: Locales = {
   time: '时间：',
@@ -22,14 +22,7 @@ const zhCN: Locales = {
   close: '收：',
   volume: '成交量：',
   turnover: '成交额：',
-  change: '涨幅：',
-  second: '秒',
-  minute: '',
-  hour: '小时',
-  day: '天',
-  week: '周',
-  month: '月',
-  year: '年'
+  change: '涨幅：'
 }
 
 export default zhCN

@@ -12,22 +12,23 @@
  * limitations under the License.
  */
 
-import type { OverlayTemplate } from '../../component/Overlay'
+import { type OverlayTemplate } from '../../component/Overlay'
 import { isFunction, isValid } from '../../common/utils/typeChecks'
+import { LineType } from '../../common/Styles'
 
 const simpleAnnotation: OverlayTemplate = {
   name: 'simpleAnnotation',
   totalStep: 2,
   styles: {
-    line: { style: 'dashed' }
+    line: { style: LineType.Dashed }
   },
   createPointFigures: ({ overlay, coordinates }) => {
-    let text = ''
+    let text
     if (isValid(overlay.extendData)) {
       if (!isFunction(overlay.extendData)) {
-        text = (overlay.extendData ?? '') as string
+        text = overlay.extendData ?? ''
       } else {
-        text = (overlay.extendData(overlay)) as string
+        text = overlay.extendData(overlay)
       }
     }
     const startX = coordinates[0].x
@@ -47,7 +48,7 @@ const simpleAnnotation: OverlayTemplate = {
       },
       {
         type: 'text',
-        attrs: { x: startX, y: arrowEndY, text, align: 'center', baseline: 'bottom' },
+        attrs: { x: startX, y: arrowEndY, text: text ?? '', align: 'center', baseline: 'bottom' },
         ignoreEvent: true
       }
     ]

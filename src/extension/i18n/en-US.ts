@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import type { Locales } from '../../Options'
+import { type Locales } from '../../Options'
 
 const enUS: Locales = {
   time: 'Time: ',
@@ -22,14 +22,7 @@ const enUS: Locales = {
   close: 'Close: ',
   volume: 'Volume: ',
   turnover: 'Turnover: ',
-  change: 'Change: ',
-  second: 'S',
-  minute: '',
-  hour: 'H',
-  day: 'D',
-  week: 'W',
-  month: 'M',
-  year: 'Y'
+  change: 'Change: '
 }
 
 export default enUS

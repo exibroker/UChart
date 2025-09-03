@@ -12,8 +12,8 @@
  * limitations under the License.
  */
 
-import type { KLineData } from '../../common/Data'
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate, IndicatorSeries } from '../../component/Indicator'
 
 interface Boll {
   up?: number
@@ -27,7 +27,7 @@ interface Boll {
  * @param ma
  * @return {number}
  */
-function getBollMd(dataList: KLineData[], ma: number): number {
+function getBollMd (dataList: KLineData[], ma: number): number {
   const dataSize = dataList.length
   let sum = 0
   dataList.forEach(data => {
@@ -41,24 +41,23 @@ function getBollMd(dataList: KLineData[], ma: number): number {
 /**
  * BOLL
  */
-const bollingerBands: IndicatorTemplate<Boll, number> = {
+const bollingerBands: IndicatorTemplate<Boll> = {
   name: 'BOLL',
   shortName: 'BOLL',
-  series: 'price',
+  series: IndicatorSeries.Price,
   calcParams: [20, 2],
   precision: 2,
   shouldOhlc: true,
   figures: [
-    { key: 'up', title: 'UP: ', type: 'line', color: 'rgba(252, 205, 103)' },
-    { key: 'mid', title: 'MID: ', type: 'line', color: 'rgba(252, 205, 103)' },
-    { key: 'dn', title: 'DN: ', type: 'line', color: 'rgba(252, 205, 103)' },
-    { key: 'band', type: 'area', backgroundColor: 'rgba(252, 205, 103, 0.15)' }
+    { key: 'up', title: 'UP: ', type: 'line' },
+    { key: 'mid', title: 'MID: ', type: 'line' },
+    { key: 'dn', title: 'DN: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
+  calc: (dataList: KLineData[], indicator: Indicator<Boll>) => {
     const params = indicator.calcParams
     const p = params[0] - 1
     let closeSum = 0
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const close = kLineData.close
       const boll: Boll = {}
       closeSum += close
@@ -69,9 +68,8 @@ const bollingerBands: IndicatorTemplate<Boll, number> = {
         boll.dn = boll.mid - params[1] * md
         closeSum -= dataList[i - p].close
       }
-      prev[kLineData.timestamp] = boll
-      return prev
-    }, {})
+      return boll
+    })
   }
 }
 

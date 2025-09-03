@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Dmi {
   pdi?: number
@@ -46,7 +47,7 @@ interface Dmi {
  * 输出ADXR:ADX的MM日指数平滑移动平均
  *
  */
-const directionalMovementIndex: IndicatorTemplate<Dmi, number> = {
+const directionalMovementIndex: IndicatorTemplate<Dmi> = {
   name: 'DMI',
   shortName: 'DMI',
   calcParams: [14, 6],
@@ -56,8 +57,8 @@ const directionalMovementIndex: IndicatorTemplate<Dmi, number> = {
     { key: 'adx', title: 'ADX: ', type: 'line' },
     { key: 'adxr', title: 'ADXR: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Dmi>) => {
+    const params = indicator.calcParams as number[]
     let trSum = 0
     let hSum = 0
     let lSum = 0
@@ -66,9 +67,8 @@ const directionalMovementIndex: IndicatorTemplate<Dmi, number> = {
     let dmm = 0
     let dxSum = 0
     let adx = 0
-    const dmiList: Dmi[] = []
-    const result: Record<number, Dmi> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Dmi[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const dmi: Dmi = {}
       const prevKLineData = dataList[i - 1] ?? kLineData
       const preClose = prevKLineData.close
@@ -116,12 +116,11 @@ const directionalMovementIndex: IndicatorTemplate<Dmi, number> = {
           }
           dmi.adx = adx
           if (i >= params[0] * 2 + params[1] - 3) {
-            dmi.adxr = ((dmiList[i - (params[1] - 1)].adx ?? 0) + adx) / 2
+            dmi.adxr = ((result[i - (params[1] - 1)].adx ?? 0) + adx) / 2
           }
         }
       }
-      dmiList.push(dmi)
-      result[kLineData.timestamp] = dmi
+      result.push(dmi)
     })
     return result
   }

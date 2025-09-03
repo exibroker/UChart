@@ -12,10 +12,9 @@
  * limitations under the License.
  */
 
-import type Nullable from '../Nullable'
 import { isValid } from './typeChecks'
 
-let measureCtx: Nullable<CanvasRenderingContext2D> = null
+let measureCtx: CanvasRenderingContext2D
 
 /**
  * Get pixel ratio
@@ -23,7 +22,7 @@ let measureCtx: Nullable<CanvasRenderingContext2D> = null
  * @returns {number}
  */
 export function getPixelRatio (canvas: HTMLCanvasElement): number {
-  return canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1
+  return canvas.ownerDocument?.defaultView?.devicePixelRatio ?? 1
 }
 
 export function createFont (size?: number, weight?: string | number, family?: string): string {

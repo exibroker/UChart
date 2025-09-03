@@ -12,41 +12,36 @@
  * limitations under the License.
  */
 
-import type { KLineData } from './common/Data'
 import type DeepPartial from './common/DeepPartial'
-import type { Styles } from './common/Styles'
+import { type Styles } from './common/Styles'
+import { formatDate, formatBigNumber } from './common/utils/format'
 
-import type { IndicatorCreate } from './component/Indicator'
-import type { PaneOptions } from './pane/types'
+import { type IndicatorCreate } from './component/Indicator'
+import { type PaneOptions } from './pane/types'
 
-export type FormatDateType = 'tooltip' | 'crosshair' | 'xAxis'
-
-export interface FormatDateParams {
-  dateTimeFormat: Intl.DateTimeFormat
-  timestamp: number
-  template: string
-  type: FormatDateType
+export enum FormatDateType {
+  Tooltip,
+  Crosshair,
+  XAxis
 }
 
-export type FormatDate = (params: FormatDateParams) => string
+export type FormatDate = (dateTimeFormat: Intl.DateTimeFormat, timestamp: number, format: string, type: FormatDateType) => string
 
 export type FormatBigNumber = (value: string | number) => string
 
-export type ExtendTextType = 'last_price'
-
-export interface FormatExtendTextParams {
-  type: ExtendTextType
-  data: KLineData
-  index: number
-}
-
-export type FormatExtendText = (params: FormatExtendTextParams) => string
-
-export interface Formatter {
+export interface CustomApi {
   formatDate: FormatDate
   formatBigNumber: FormatBigNumber
-  formatExtendText: FormatExtendText
 }
+
+export function getDefaultCustomApi (): CustomApi {
+  return {
+    formatDate,
+    formatBigNumber
+  }
+}
+
+export const defaultLocale = 'en-US'
 
 export interface Locales {
   time: string
@@ -57,17 +52,14 @@ export interface Locales {
   volume: string
   change: string
   turnover: string
-  second: string
-  minute: string
-  hour: string
-  day: string
-  week: string
-  month: string
-  year: string
   [key: string]: string
 }
 
-export type LayoutChildType = 'candle' | 'indicator' | 'xAxis'
+export const enum LayoutChildType {
+  Candle = 'candle',
+  Indicator = 'indicator',
+  XAxis = 'xAxis'
+}
 
 export interface LayoutChild {
   type: LayoutChildType
@@ -75,22 +67,12 @@ export interface LayoutChild {
   options?: PaneOptions
 }
 
-export interface DecimalFold {
-  threshold: number
-  format: (value: string | number) => string
-}
-
-export interface ThousandsSeparator {
-  sign: string
-  format: (value: string | number) => string
-}
-
 export interface Options {
+  layout?: LayoutChild[]
   locale?: string
   timezone?: string
   styles?: string | DeepPartial<Styles>
-  formatter?: Partial<Formatter>
-  thousandsSeparator?: Partial<ThousandsSeparator>
-  decimalFold?: Partial<DecimalFold>
-  layout?: LayoutChild[]
+  customApi?: Partial<CustomApi>
+  thousandsSeparator?: string
+  decimalFoldThreshold?: number
 }

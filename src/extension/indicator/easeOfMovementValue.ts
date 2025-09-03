@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Emv {
   emv?: number
@@ -31,7 +32,7 @@ interface Emv {
  * MAEMV=EMV的M日的简单移动平均
  *
  */
-const easeOfMovementValue: IndicatorTemplate<Emv, number> = {
+const easeOfMovementValue: IndicatorTemplate<Emv> = {
   name: 'EMV',
   shortName: 'EMV',
   calcParams: [14, 9],
@@ -39,11 +40,11 @@ const easeOfMovementValue: IndicatorTemplate<Emv, number> = {
     { key: 'emv', title: 'EMV: ', type: 'line' },
     { key: 'maEmv', title: 'MAEMV: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Emv>) => {
+    const params = indicator.calcParams as number[]
     let emvValueSum = 0
     const emvValueList: number[] = []
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const emv: Emv = {}
       if (i > 0) {
         const prevKLineData = dataList[i - 1]
@@ -65,9 +66,8 @@ const easeOfMovementValue: IndicatorTemplate<Emv, number> = {
           emvValueSum -= emvValueList[i - params[0]]
         }
       }
-      prev[kLineData.timestamp] = emv
-      return prev
-    }, {})
+      return emv
+    })
   }
 }
 

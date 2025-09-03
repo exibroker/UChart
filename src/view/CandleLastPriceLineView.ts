@@ -12,7 +12,6 @@
  * limitations under the License.
  */
 
-import { isValid } from '../common/utils/typeChecks'
 import type YAxis from '../component/YAxis'
 
 import View from './View'
@@ -30,14 +29,13 @@ export default class CandleLastPriceView extends View {
       const yAxis = pane.getAxisComponent() as YAxis
       const dataList = chartStore.getDataList()
       const data = dataList[dataList.length - 1]
-      if (isValid(data)) {
+      if (data != null) {
         const { close, open } = data
-        const comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open : (dataList[dataList.length - 2]?.close ?? close)
         const priceY = yAxis.convertToNicePixel(close)
-        let color = ''
-        if (close > comparePrice) {
+        let color: string
+        if (close > open) {
           color = lastPriceMarkStyles.upColor
-        } else if (close < comparePrice) {
+        } else if (close < open) {
           color = lastPriceMarkStyles.downColor
         } else {
           color = lastPriceMarkStyles.noChangeColor

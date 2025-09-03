@@ -13,13 +13,13 @@
  */
 
 import type Nullable from '../common/Nullable'
-import type { EventHandler, EventName, MouseTouchEvent } from '../common/EventHandler'
+import { type EventHandler, type EventName } from '../common/SyntheticEvent'
 import Eventful from '../common/Eventful'
 import { isValid } from '../common/utils/typeChecks'
 
 import type Figure from '../component/Figure'
-import type { Axis } from '../component/Axis'
-import type { FigureCreate } from '../component/Figure'
+import type Axis from '../component/Axis'
+import { type FigureCreate } from '../component/Figure'
 
 import { getInnerFigureClass } from '../extension/figure/index'
 
@@ -39,33 +39,29 @@ export default abstract class View<C extends Axis = Axis> extends Eventful {
 
   getWidget (): DrawWidget<DrawPane<C>> { return this._widget }
 
-  protected createFigure (create: FigureCreate, eventHandler?: EventHandler): Nullable<Figure> {
-    const FigureClazz = getInnerFigureClass(create.name)
+  protected createFigure (figure: FigureCreate, eventHandler?: EventHandler): Nullable<Figure> {
+    const FigureClazz = getInnerFigureClass(figure.name)
     if (FigureClazz !== null) {
-      const figure = new FigureClazz(create)
+      const instance = new FigureClazz(figure)
       if (isValid(eventHandler)) {
         for (const key in eventHandler) {
-          // eslint-disable-next-line no-prototype-builtins -- ignore
+          // eslint-disable-next-line no-prototype-builtins
           if (eventHandler.hasOwnProperty(key)) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            figure.registerEvent(key as EventName, eventHandler[key])
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            instance.registerEvent(key as EventName, eventHandler[key])
           }
         }
-        this.addChild(figure)
+        this.addChild(instance)
       }
-      return figure
+      return instance
     }
     return null
   }
 
-  draw (ctx: CanvasRenderingContext2D, ...extend: unknown[]): void {
+  draw (ctx: CanvasRenderingContext2D): void {
     this.clear()
-    this.drawImp(ctx, extend)
+    this.drawImp(ctx)
   }
 
-  checkEventOn (_: MouseTouchEvent): boolean {
-    return true
-  }
-
-  protected abstract drawImp (ctx: CanvasRenderingContext2D, ...extend: unknown[]): void
+  protected abstract drawImp (ctx: CanvasRenderingContext2D): void
 }

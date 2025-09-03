@@ -14,14 +14,24 @@
 
 import { isFunction } from './utils/typeChecks'
 
-export type ActionCallback = (data?: unknown) => void
+export type ActionCallback = (data?: any) => void
 
-export type ActionType = 'onZoom' | 'onScroll' | 'onVisibleRangeChange' | 'onCandleTooltipFeatureClick' | 'onIndicatorTooltipFeatureClick'| 'onCrosshairFeatureClick' | 'onCrosshairChange' | 'onCandleBarClick' | 'onPaneDrag'
-export default class Action {
+export enum ActionType {
+  OnDataReady = 'onDataReady',
+  OnZoom = 'onZoom',
+  OnScroll = 'onScroll',
+  OnVisibleRangeChange = 'onVisibleRangeChange',
+  OnTooltipIconClick = 'onTooltipIconClick',
+  OnCrosshairChange = 'onCrosshairChange',
+  OnCandleBarClick = 'onCandleBarClick',
+  OnPaneDrag = 'onPaneDrag'
+}
+
+export default class Delegate {
   private _callbacks: ActionCallback[] = []
 
   subscribe (callback: ActionCallback): void {
-    const index = this._callbacks.indexOf(callback)
+    const index = this._callbacks.indexOf(callback) ?? -1
     if (index < 0) {
       this._callbacks.push(callback)
     }
@@ -29,7 +39,7 @@ export default class Action {
 
   unsubscribe (callback?: ActionCallback): void {
     if (isFunction(callback)) {
-      const index = this._callbacks.indexOf(callback)
+      const index = this._callbacks.indexOf(callback) ?? -1
       if (index > -1) {
         this._callbacks.splice(index, 1)
       }
@@ -38,7 +48,7 @@ export default class Action {
     }
   }
 
-  execute (data?: unknown): void {
+  execute (data?: any): void {
     this._callbacks.forEach(callback => {
       callback(data)
     })

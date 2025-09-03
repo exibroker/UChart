@@ -1,6 +1,6 @@
 
 {
-  "name": "docs",
+  "name": "klinecharts-docs",
   "type": "module",
   "private": false,
   "scripts": {

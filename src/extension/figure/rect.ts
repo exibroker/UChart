@@ -13,7 +13,7 @@
  */
 
 import type Coordinate from '../../common/Coordinate'
-import type { RectStyle } from '../../common/Styles'
+import { type RectStyle, PolygonType, LineType } from '../../common/Styles'
 import { isTransparent } from '../../common/utils/color'
 import { isString } from '../../common/utils/typeChecks'
 
@@ -22,7 +22,8 @@ import { type FigureTemplate, DEVIATION } from '../../component/Figure'
 export function checkCoordinateOnRect (coordinate: Coordinate, attrs: RectAttrs | RectAttrs[]): boolean {
   let rects: RectAttrs[] = []
   rects = rects.concat(attrs)
-  for (const rect of rects) {
+  for (let i = 0; i < rects.length; i++) {
+    const rect = rects[i]
     let x = rect.x
     let width = rect.width
     if (width < DEVIATION * 2) {
@@ -51,17 +52,17 @@ export function drawRect (ctx: CanvasRenderingContext2D, attrs: RectAttrs | Rect
   let rects: RectAttrs[] = []
   rects = rects.concat(attrs)
   const {
-    style = 'fill',
+    style = PolygonType.Fill,
     color = 'transparent',
     borderSize = 1,
     borderColor = 'transparent',
-    borderStyle = 'solid',
+    borderStyle = LineType.Solid,
     borderRadius: r = 0,
     borderDashedValue = [2, 2]
   } = styles
-  // eslint-disable-next-line @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-condition -- ignore
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const draw = ctx.roundRect ?? ctx.rect
-  const solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color))
+  const solid = (style === PolygonType.Fill || styles.style === PolygonType.StrokeFill) && (!isString(color) || !isTransparent(color))
   if (solid) {
     ctx.fillStyle = color
     rects.forEach(({ x, y, width: w, height: h }) => {
@@ -71,11 +72,11 @@ export function drawRect (ctx: CanvasRenderingContext2D, attrs: RectAttrs | Rect
       ctx.fill()
     })
   }
-  if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
+  if ((style === PolygonType.Stroke || styles.style === PolygonType.StrokeFill) && borderSize > 0 && !isTransparent(borderColor)) {
     ctx.strokeStyle = borderColor
     ctx.fillStyle = borderColor
     ctx.lineWidth = borderSize
-    if (borderStyle === 'dashed') {
+    if (borderStyle === LineType.Dashed) {
       ctx.setLineDash(borderDashedValue)
     } else {
       ctx.setLineDash([])

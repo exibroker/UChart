@@ -13,7 +13,7 @@
  */
 
 import type DeepPartial from '../../common/DeepPartial'
-import type { Styles } from '../../common/Styles'
+import { type Styles } from '../../common/Styles'
 
 const dark: DeepPartial<Styles> = {
   grid: {
@@ -38,20 +38,14 @@ const dark: DeepPartial<Styles> = {
         color: 'rgba(10, 10, 10, .6)',
         borderColor: 'rgba(10, 10, 10, .6)'
       },
-      title: {
-        color: '#929AA5'
-      },
-      legend: {
+      text: {
         color: '#929AA5'
       }
     }
   },
   indicator: {
     tooltip: {
-      title: {
-        color: '#929AA5'
-      },
-      legend: {
+      text: {
         color: '#929AA5'
       }
     }

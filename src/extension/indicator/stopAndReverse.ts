@@ -12,20 +12,20 @@
  * limitations under the License.
  */
 
+import type KLineData from '../../common/KLineData'
+import { type IndicatorStyle } from '../../common/Styles'
 import { formatValue } from '../../common/utils/format'
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import { type Indicator, type IndicatorTemplate, IndicatorSeries, type IndicatorFigureStylesCallbackData } from '../../component/Indicator'
 
 interface Sar {
   sar?: number
-  high: number
-  low: number
 }
 
-const stopAndReverse: IndicatorTemplate<Sar, number> = {
+const stopAndReverse: IndicatorTemplate<Sar> = {
   name: 'SAR',
   shortName: 'SAR',
-  series: 'price',
+  series: IndicatorSeries.Price,
   calcParams: [2, 2, 20],
   precision: 2,
   shouldOhlc: true,
@@ -34,18 +34,19 @@ const stopAndReverse: IndicatorTemplate<Sar, number> = {
       key: 'sar',
       title: 'SAR: ',
       type: 'circle',
-      styles: ({ data, indicator, defaultStyles }) => {
+      styles: (data: IndicatorFigureStylesCallbackData<Sar>, indicator: Indicator, defaultStyles: IndicatorStyle) => {
         const { current } = data
-        const sar = current?.sar ?? Number.MIN_SAFE_INTEGER
-        const halfHL = ((current?.high ?? 0) + (current?.low ?? 0)) / 2
+        const sar = current.indicatorData?.sar ?? Number.MIN_SAFE_INTEGER
+        const kLineData = current.kLineData!
+        const halfHL = (kLineData?.high + kLineData?.low) / 2
         const color = sar < halfHL
-          ? formatValue(indicator.styles, 'circles[0].upColor', (defaultStyles!.circles)[0].upColor) as string
-          : formatValue(indicator.styles, 'circles[0].downColor', (defaultStyles!.circles)[0].downColor) as string
+          ? formatValue(indicator.styles, 'circles[0].upColor', (defaultStyles.circles)[0].upColor) as string
+          : formatValue(indicator.styles, 'circles[0].downColor', (defaultStyles.circles)[0].downColor) as string
         return { color }
       }
     }
   ],
-  calc: (dataList, indicator) => {
+  calc: (dataList: KLineData[], indicator: Indicator<Sar>) => {
     const params = indicator.calcParams
     const startAf = params[0] / 100
     const step = params[1] / 100
@@ -58,7 +59,7 @@ const stopAndReverse: IndicatorTemplate<Sar, number> = {
     // 判断是上涨还是下跌  false：下跌
     let isIncreasing = false
     let sar = 0
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       // 上一个周期的sar
       const preSar = sar
       const high = kLineData.high
@@ -99,9 +100,8 @@ const stopAndReverse: IndicatorTemplate<Sar, number> = {
           sar = highMax
         }
       }
-      prev[kLineData.timestamp] = { high, low, sar }
-      return prev
-    }, {})
+      return { sar }
+    })
   }
 }
 

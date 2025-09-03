@@ -1,6 +1,6 @@
 # 📚 Data
 
-The data required by the chart must be in a fixed format. Use the chart instance API [setDataLoader(loader)](/en-US/api/instance/setDataLoader) to interact with the chart.
+The data required for the chart must be in a fixed format. Through the chart API [applyNewData(dataList, more)](./instance-api.md#applynewdata-datalist-more), [applyMoreData(dataList, more)](./instance-api.md#applymoredatadatalist-more) and [updateData(data)](./instance-api.md#updatedatadata) to interact data with the chart.
 
 ```typescript
 {

@@ -12,8 +12,9 @@
  * limitations under the License.
  */
 
-import { SymbolDefaultPrecisionConstants } from '../../common/SymbolInfo'
-import type { OverlayTemplate } from '../../component/Overlay'
+import { type OverlayTemplate } from '../../component/Overlay'
+
+import { formatThousands, formatFoldDecimal } from '../../common/utils/format'
 
 const priceLine: OverlayTemplate = {
   name: 'priceLine',
@@ -21,17 +22,9 @@ const priceLine: OverlayTemplate = {
   needDefaultPointFigure: true,
   needDefaultXAxisFigure: true,
   needDefaultYAxisFigure: true,
-  createPointFigures: ({ chart, coordinates, bounding, overlay, yAxis }) => {
-    let precision = 0
-    if (yAxis?.isInCandle() ?? true) {
-      precision = chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE
-    } else {
-      const indicators = chart.getIndicators({ paneId: overlay.paneId })
-      indicators.forEach(indicator => {
-        precision = Math.max(precision, indicator.precision)
-      })
-    }
+  createPointFigures: ({ coordinates, bounding, precision, overlay, thousandsSeparator, decimalFoldThreshold, yAxis }) => {
     const { value = 0 } = (overlay.points)[0]
+    const currentPrecision = (yAxis?.isInCandle() ?? true) ? precision.price : precision.excludePriceVolumeMax
     return [
       {
         type: 'line',
@@ -43,7 +36,7 @@ const priceLine: OverlayTemplate = {
         attrs: {
           x: coordinates[0].x,
           y: coordinates[0].y,
-          text: chart.getDecimalFold().format(chart.getThousandsSeparator().format(value.toFixed(precision))),
+          text: formatFoldDecimal(formatThousands(value.toFixed(currentPrecision), thousandsSeparator), decimalFoldThreshold),
           baseline: 'bottom'
         }
       }

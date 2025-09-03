@@ -13,15 +13,15 @@
  */
 
 import type Coordinate from '../common/Coordinate'
-import type { CandleHighLowPriceMarkStyle } from '../common/Styles'
-import { formatPrecision } from '../common/utils/format'
-import { SymbolDefaultPrecisionConstants } from '../common/SymbolInfo'
+import type VisibleData from '../common/VisibleData'
+import { type CandleHighLowPriceMarkStyle } from '../common/Styles'
 
-import View from './View'
+import ChildrenView from './ChildrenView'
 
-import type { YAxis } from '../component/YAxis'
+import { formatPrecision, formatThousands, formatFoldDecimal } from '../common/utils/format'
+import { isValid } from '../common/utils/typeChecks'
 
-export default class CandleHighLowPriceView extends View<YAxis> {
+export default class CandleHighLowPriceView extends ChildrenView {
   override drawImp (ctx: CanvasRenderingContext2D): void {
     const widget = this.getWidget()
     const pane = widget.getPane()
@@ -30,20 +30,33 @@ export default class CandleHighLowPriceView extends View<YAxis> {
     const highPriceMarkStyles = priceMarkStyles.high
     const lowPriceMarkStyles = priceMarkStyles.low
     if (priceMarkStyles.show && (highPriceMarkStyles.show || lowPriceMarkStyles.show)) {
-      const highestLowestPrice = chartStore.getVisibleRangeHighLowPrice()
-      const precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE
+      const thousandsSeparator = chartStore.getThousandsSeparator()
+      const decimalFoldThreshold = chartStore.getDecimalFoldThreshold()
+      const precision = chartStore.getPrecision()
       const yAxis = pane.getAxisComponent()
-
-      const { price: high, x: highX } = highestLowestPrice[0]
-      const { price: low, x: lowX } = highestLowestPrice[1]
+      let high = Number.MIN_SAFE_INTEGER
+      let highX = 0
+      let low = Number.MAX_SAFE_INTEGER
+      let lowX = 0
+      this.eachChildren((data: VisibleData) => {
+        const { data: kLineData, x } = data
+        if (isValid(kLineData)) {
+          if (high < kLineData.high) {
+            high = kLineData.high
+            highX = x
+          }
+          if (low > kLineData.low) {
+            low = kLineData.low
+            lowX = x
+          }
+        }
+      })
       const highY = yAxis.convertToPixel(high)
       const lowY = yAxis.convertToPixel(low)
-      const decimalFold = chartStore.getDecimalFold()
-      const thousandsSeparator = chartStore.getThousandsSeparator()
       if (highPriceMarkStyles.show && high !== Number.MIN_SAFE_INTEGER) {
         this._drawMark(
           ctx,
-          decimalFold.format(thousandsSeparator.format(formatPrecision(high, precision))),
+          formatFoldDecimal(formatThousands(formatPrecision(high, precision.price), thousandsSeparator), decimalFoldThreshold),
           { x: highX, y: highY },
           highY < lowY ? [-2, -5] : [2, 5],
           highPriceMarkStyles
@@ -52,7 +65,7 @@ export default class CandleHighLowPriceView extends View<YAxis> {
       if (lowPriceMarkStyles.show && low !== Number.MAX_SAFE_INTEGER) {
         this._drawMark(
           ctx,
-          decimalFold.format(thousandsSeparator.format(formatPrecision(low, precision))),
+          formatFoldDecimal(formatThousands(formatPrecision(low, precision.price), thousandsSeparator), decimalFoldThreshold),
           { x: lowX, y: lowY },
           highY < lowY ? [2, 5] : [-2, -5],
           lowPriceMarkStyles
@@ -82,9 +95,9 @@ export default class CandleHighLowPriceView extends View<YAxis> {
       styles: { color: styles.color }
     })?.draw(ctx)
 
-    let lineEndX = 0
-    let textStartX = 0
-    let textAlign = 'left'
+    let lineEndX: number
+    let textStartX: number
+    let textAlign: string
     const { width } = this.getWidget().getBounding()
     if (startX > width / 2) {
       lineEndX = startX - 5

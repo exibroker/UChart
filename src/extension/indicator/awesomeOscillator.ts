@@ -12,15 +12,17 @@
  * limitations under the License.
  */
 
+import type KLineData from '../../common/KLineData'
+import { type IndicatorStyle, PolygonType } from '../../common/Styles'
 import { formatValue } from '../../common/utils/format'
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import { type Indicator, type IndicatorTemplate, type IndicatorFigureStylesCallbackData } from '../../component/Indicator'
 
 interface Ao {
   ao?: number
 }
 
-const awesomeOscillator: IndicatorTemplate<Ao, number> = {
+const awesomeOscillator: IndicatorTemplate<Ao> = {
   name: 'AO',
   shortName: 'AO',
   calcParams: [5, 34],
@@ -29,28 +31,28 @@ const awesomeOscillator: IndicatorTemplate<Ao, number> = {
     title: 'AO: ',
     type: 'bar',
     baseValue: 0,
-    styles: ({ data, indicator, defaultStyles }) => {
+    styles: (data: IndicatorFigureStylesCallbackData<Ao>, indicator: Indicator<Ao>, defaultStyles: IndicatorStyle) => {
       const { prev, current } = data
-      const prevAo = prev?.ao ?? Number.MIN_SAFE_INTEGER
-      const currentAo = current?.ao ?? Number.MIN_SAFE_INTEGER
-      let color = ''
+      const prevAo = prev.indicatorData?.ao ?? Number.MIN_SAFE_INTEGER
+      const currentAo = current.indicatorData?.ao ?? Number.MIN_SAFE_INTEGER
+      let color: string
       if (currentAo > prevAo) {
-        color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles!.bars)[0].upColor) as string
+        color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles.bars)[0].upColor) as string
       } else {
-        color = formatValue(indicator.styles, 'bars[0].downColor', (defaultStyles!.bars)[0].downColor) as string
+        color = formatValue(indicator.styles, 'bars[0].downColor', (defaultStyles.bars)[0].downColor) as string
       }
-      const style = currentAo > prevAo ? 'stroke' : 'fill'
+      const style = currentAo > prevAo ? PolygonType.Stroke : PolygonType.Fill
       return { color, style, borderColor: color }
     }
   }],
-  calc: (dataList, indicator) => {
+  calc: (dataList: KLineData[], indicator: Indicator<Ao>) => {
     const params = indicator.calcParams
-    const maxPeriod = Math.max(params[0], params[1])
+    const maxPeriod = Math.max(params[0] as number, params[1] as number)
     let shortSum = 0
     let longSum = 0
     let short = 0
     let long = 0
-    return dataList.reduce((prev, kLineData, i) => {
+    return dataList.map((kLineData: KLineData, i: number) => {
       const ao: Ao = {}
       const middle = (kLineData.low + kLineData.high) / 2
       shortSum += middle
@@ -68,9 +70,8 @@ const awesomeOscillator: IndicatorTemplate<Ao, number> = {
       if (i >= maxPeriod - 1) {
         ao.ao = short - long
       }
-      prev[kLineData.timestamp] = ao
-      return prev
-    }, {})
+      return ao
+    })
   }
 }
 

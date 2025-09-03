@@ -13,120 +13,110 @@
  */
 
 import type Nullable from '../common/Nullable'
-import type DeepPartial from '../common/DeepPartial'
 import type ExcludePickPartial from '../common/ExcludePickPartial'
-import type { KLineData, NeighborData, Timestamp } from '../common/Data'
+import type KLineData from '../common/KLineData'
 import type Bounding from '../common/Bounding'
+import type VisibleRange from '../common/VisibleRange'
 import type BarSpace from '../common/BarSpace'
 import type Crosshair from '../common/Crosshair'
-import type { IndicatorStyle, IndicatorPolygonStyle, SmoothLineStyle, RectStyle, TextStyle, TooltipFeatureStyle, LineStyle, LineType, TooltipLegend } from '../common/Styles'
-import { isNumber, isValid, merge, isBoolean, isString, clone, isFunction } from '../common/utils/typeChecks'
-import type { DataLoadType } from '../common/DataLoader'
+import { type IndicatorStyle, type IndicatorPolygonStyle, type SmoothLineStyle, type RectStyle, type TextStyle, type TooltipIconStyle, type LineStyle, type LineType, type PolygonType, type TooltipLegend } from '../common/Styles'
 
-import type { XAxis } from './XAxis'
-import type { YAxis } from './YAxis'
+import { type XAxis } from './XAxis'
+import { type YAxis } from './YAxis'
 
 import { formatValue } from '../common/utils/format'
+import { isValid, merge, clone } from '../common/utils/typeChecks'
 
-import type { ArcAttrs } from '../extension/figure/arc'
-import type { RectAttrs } from '../extension/figure/rect'
-import type { TextAttrs } from '../extension/figure/text'
-import type { Chart } from '../Chart'
+import { type ArcAttrs } from '../extension/figure/arc'
+import { type RectAttrs } from '../extension/figure/rect'
+import { type TextAttrs } from '../extension/figure/text'
 
-export type IndicatorSeries = 'normal' | 'price' | 'volume'
+export enum IndicatorSeries {
+  Normal = 'normal',
+  Price = 'price',
+  Volume = 'volume'
+}
 
-export type IndicatorFigureStyle = Partial<Omit<SmoothLineStyle, 'style'>> & Partial<Omit<RectStyle, 'style'>> & Partial<TextStyle> & Partial<{ style: LineType[keyof LineType] }> & Record<string, unknown>
+export type IndicatorFigureStyle = Partial<Omit<SmoothLineStyle, 'style'>> & Partial<Omit<RectStyle, 'style'>> & Partial<TextStyle> & Partial<{ style: LineType[keyof LineType] | PolygonType[keyof PolygonType] }> & Record<string, any>
 
-export type IndicatorFigureAttrs = Partial<ArcAttrs> & Partial<LineStyle> & Partial<RectAttrs> & Partial<TextAttrs> & Record<string, unknown>
+export type IndicatorFigureAttrs = Partial<ArcAttrs> & Partial<LineStyle> & Partial<RectAttrs> & Partial<TextAttrs> & Record<string, any>
+
+export interface IndicatorFigureCallbackBrother<PCN> {
+  prev: PCN
+  current: PCN
+  next: PCN
+}
+
+export type IndicatorFigureAttrsCallbackCoordinate<D> = IndicatorFigureCallbackBrother<Record<keyof D, number> & { x: number }>
+
+export type IndicatorFigureAttrsCallbackData<D> = IndicatorFigureCallbackBrother<D>
 
 export interface IndicatorFigureAttrsCallbackParams<D> {
-  data: NeighborData<Nullable<D>>
-  coordinate: NeighborData<Record<keyof D, number> & { x: number }>
+  data: IndicatorFigureAttrsCallbackData<Nullable<D>>
+  coordinate: IndicatorFigureAttrsCallbackCoordinate<D>
   bounding: Bounding
   barSpace: BarSpace
   xAxis: XAxis
   yAxis: YAxis
 }
 
-export interface IndicatorFigureStylesCallbackParams<D> {
-  data: NeighborData<Nullable<D>>
-  indicator: Indicator<D>
-  defaultStyles?: IndicatorStyle
+export interface IndicatorFigureStylesCallbackDataChild<D> {
+  kLineData?: KLineData
+  indicatorData?: D
 }
 
-export type IndicatorFigureAttrsCallback<D> = (params: IndicatorFigureAttrsCallbackParams<D>) => IndicatorFigureAttrs
-export type IndicatorFigureStylesCallback<D> = (params: IndicatorFigureStylesCallbackParams<D>) => IndicatorFigureStyle
+export type IndicatorFigureStylesCallbackData<D> = IndicatorFigureCallbackBrother<IndicatorFigureStylesCallbackDataChild<D>>
 
-export interface IndicatorFigure<D = unknown> {
+export type IndicatorFigureAttrsCallback<D> = (params: IndicatorFigureAttrsCallbackParams<D>) => IndicatorFigureAttrs
+export type IndicatorFigureStylesCallback<D> = (data: IndicatorFigureStylesCallbackData<D>, indicator: Indicator<D>, defaultStyles: IndicatorStyle) => IndicatorFigureStyle
+
+export interface IndicatorFigure<D = any> {
   key: string
   title?: string
   type?: string
   baseValue?: number
-  lineStyle?: 'solid' | 'dashed' | 'dotted'
-  backgroundColor?: string
-  color?: string
   attrs?: IndicatorFigureAttrsCallback<D>
   styles?: IndicatorFigureStylesCallback<D>
 }
 
-export type IndicatorRegenerateFiguresCallback<D, C> = (calcParams: C[]) => Array<IndicatorFigure<D>>
+export type IndicatorRegenerateFiguresCallback<D = any> = (calcParams: any[]) => Array<IndicatorFigure<D>>
 
 export interface IndicatorTooltipData {
   name: string
   calcParamsText: string
-  features: TooltipFeatureStyle[]
-  legends: TooltipLegend[]
+  icons: TooltipIconStyle[]
+  values: TooltipLegend[]
 }
 
-export interface IndicatorCreateTooltipDataSourceParams<D> {
-  chart: Chart
+export interface IndicatorCreateTooltipDataSourceParams<D = any> {
+  kLineDataList: KLineData[]
   indicator: Indicator<D>
+  visibleRange: VisibleRange
   bounding: Bounding
   crosshair: Crosshair
+  defaultStyles: IndicatorStyle
   xAxis: XAxis
   yAxis: YAxis
 }
 
-export type IndicatorCreateTooltipDataSourceCallback<D> = (params: IndicatorCreateTooltipDataSourceParams<D>) => IndicatorTooltipData
+export type IndicatorCreateTooltipDataSourceCallback<D = any> = (params: IndicatorCreateTooltipDataSourceParams<D>) => IndicatorTooltipData
 
-export type IndicatorEventTarget = 'feature'
-
-export interface IndicatorDrawParams<D, C, E> {
+export interface IndicatorDrawParams<D = any> {
   ctx: CanvasRenderingContext2D
-  chart: Chart
-  indicator: Indicator<D, C, E>
+  kLineDataList: KLineData[]
+  indicator: Indicator<D>
+  visibleRange: VisibleRange
   bounding: Bounding
+  barSpace: BarSpace
+  defaultStyles: IndicatorStyle
   xAxis: XAxis
   yAxis: YAxis
 }
 
-export type IndicatorDrawCallback<D, C, E> = (params: IndicatorDrawParams<D, C, E>) => boolean
+export type IndicatorDrawCallback<D = any> = (params: IndicatorDrawParams<D>) => boolean
+export type IndicatorCalcCallback<D> = (dataList: KLineData[], indicator: Indicator<D>) => Promise<D[]> | D[]
 
-export type IndicatorCalcCallback<D, C, E> = (dataList: KLineData[], indicator: Indicator<D, C, E>) => Promise<Record<Timestamp, D>> | Record<Timestamp, D>
-
-export type IndicatorShouldUpdateCallback<D, C, E> = (prev: Indicator<D, C, E>, current: Indicator<D, C, E>) => (boolean | { calc: boolean, draw: boolean })
-
-export type IndicatorDataState = 'loading' | 'error' | 'ready'
-
-export interface IndicatorOnDataStateChangeParams<D> {
-  state: IndicatorDataState
-  type: DataLoadType
-
-  indicator: Indicator<D>
-}
-export type IndicatorOnDataStateChangeCallback<D> = (params: IndicatorOnDataStateChangeParams<D>) => void
-
-export interface Indicator<D = unknown, C = unknown, E = unknown> {
-  /**
-   * Unique id
-   */
-  id: string
-
-  /**
-   * Pane id
-   */
-  paneId: string
-
+export interface Indicator<D = any> {
   /**
    * Indicator name
    */
@@ -145,7 +135,7 @@ export interface Indicator<D = unknown, C = unknown, E = unknown> {
   /**
    * Calculation parameters
    */
-  calcParams: C[]
+  calcParams: any[]
 
   /**
    * Whether ohlc column is required
@@ -170,7 +160,7 @@ export interface Indicator<D = unknown, C = unknown, E = unknown> {
   /**
    * Extend data
    */
-  extendData: E
+  extendData: any
 
   /**
    * Indicator series
@@ -195,61 +185,48 @@ export interface Indicator<D = unknown, C = unknown, E = unknown> {
   /**
    * Style configuration
    */
-  styles: Nullable<DeepPartial<IndicatorStyle>>
-
-  /**
-   *  Should update, should calc or draw
-   */
-  shouldUpdate: Nullable<IndicatorShouldUpdateCallback<D, C, E>>
+  styles: Nullable<Partial<IndicatorStyle>>
 
   /**
    * Indicator calculation
    */
-  calc: IndicatorCalcCallback<D, C, E>
+  calc: IndicatorCalcCallback<D>
 
   /**
    * Regenerate figure configuration
    */
-  regenerateFigures: Nullable<IndicatorRegenerateFiguresCallback<D, C>>
+  regenerateFigures: Nullable<IndicatorRegenerateFiguresCallback<D>>
 
   /**
    * Create custom tooltip text
    */
-  createTooltipDataSource: Nullable<IndicatorCreateTooltipDataSourceCallback<D>>
+  createTooltipDataSource: Nullable<IndicatorCreateTooltipDataSourceCallback>
 
   /**
    * Custom draw
    */
-  draw: Nullable<IndicatorDrawCallback<D, C, E>>
-
-  /**
-   * Data state change
-   */
-  onDataStateChange: Nullable<IndicatorOnDataStateChangeCallback<D>>
+  draw: Nullable<IndicatorDrawCallback<D>>
 
   /**
    * Calculation result
    */
-  result: Record<Timestamp, D>
+  result: D[]
 }
 
-export type IndicatorTemplate<D = unknown, C = unknown, E = unknown> = ExcludePickPartial<Omit<Indicator<D, C, E>, 'result' | 'paneId'>, 'name' | 'calc'>
+export type IndicatorTemplate<D = any> = ExcludePickPartial<Omit<Indicator<D>, 'result'>, 'name' | 'calc'>
 
-export type IndicatorCreate<D = unknown, C = unknown, E = unknown> = ExcludePickPartial<Omit<Indicator<D, C, E>, 'result'>, 'name'>
+export type IndicatorCreate<D = any> = ExcludePickPartial<Omit<Indicator<D>, 'result'>, 'name'>
 
-export type IndicatorOverride<D = unknown, C = unknown, E = unknown> = Partial<Omit<Indicator<D, C, E>, 'result'>>
+export type IndicatorConstructor<D = any> = new () => IndicatorImp<D>
 
-export type IndicatorFilter = Partial<Pick<Indicator, 'id' | 'paneId' | 'name'>>
+export type EachFigureCallback = (figure: IndicatorFigure, figureStyles: IndicatorFigureStyle, index: number) => void
 
-export type IndicatorConstructor<D = unknown, C = unknown, E = unknown> = new () => IndicatorImp<D, C, E>
-
-export type EachFigureCallback<D> = (figure: IndicatorFigure<D>, figureStyles: IndicatorFigureStyle, index: number) => void
-
-export function eachFigures<D = unknown>(
-  indicator: Indicator,
-  timestamps: NeighborData<Nullable<number>>,
+export function eachFigures<D> (
+  kLineDataList: KLineData[],
+  indicator: Indicator<D>,
+  dataIndex: number,
   defaultStyles: IndicatorStyle,
-  eachFigureCallback: EachFigureCallback<D>
+  eachFigureCallback: EachFigureCallback
 ): void {
   const result = indicator.result
   const figures = indicator.figures
@@ -268,7 +245,6 @@ export function eachFigures<D = unknown>(
   let barCount = 0
   let lineCount = 0
 
-  // eslint-disable-next-line @typescript-eslint/init-declarations  -- ignore
   let defaultFigureStyles
   let figureIndex = 0
   figures.forEach(figure => {
@@ -295,134 +271,197 @@ export function eachFigures<D = unknown>(
       }
       default: { break }
     }
-    if (isValid(figure.type)) {
-      const ss = figure.styles?.({
-        data: {
-          prev: result[timestamps.prev ?? ''],
-          current: result[timestamps.current ?? ''],
-          next: result[timestamps.next ?? '']
-        },
-        indicator,
-        defaultStyles
-      })
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
+    if (isValid(defaultFigureStyles)) {
+      const cbData = {
+        prev: { kLineData: kLineDataList[dataIndex - 1], indicatorData: result[dataIndex - 1] },
+        current: { kLineData: kLineDataList[dataIndex], indicatorData: result[dataIndex] },
+        next: { kLineData: kLineDataList[dataIndex + 1], indicatorData: result[dataIndex + 1] }
+      }
+      const ss = figure.styles?.(cbData, indicator, defaultStyles)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       eachFigureCallback(figure, { ...defaultFigureStyles, ...ss }, figureIndex)
     }
   })
 }
 
-export default class IndicatorImp<D = unknown, C = unknown, E = unknown> implements Indicator<D, C, E> {
-  id: string
-  paneId: string
+export default abstract class IndicatorImp<D = any> implements Indicator<D> {
   name: string
   shortName: string
-  precision = 4
-  calcParams: C[] = []
-  shouldOhlc = false
-  shouldFormatBigNumber = false
-  visible = true
-  zLevel = 0
-  extendData: E
-  series: IndicatorSeries = 'normal'
-  figures: Array<IndicatorFigure<D>> = []
-  minValue: Nullable<number> = null
-  maxValue: Nullable<number> = null
-  styles: Nullable<Partial<IndicatorStyle>> = null
-  shouldUpdate: IndicatorShouldUpdateCallback<D, C, E> = (prev, current) => {
-    const calc = JSON.stringify(prev.calcParams) !== JSON.stringify(current.calcParams) ||
-      prev.figures !== current.figures ||
-      prev.calc !== current.calc
-    const draw = calc ||
-      prev.shortName !== current.shortName ||
-      prev.series !== current.series ||
-      prev.minValue !== current.minValue ||
-      prev.maxValue !== current.maxValue ||
-      prev.precision !== current.precision ||
-      prev.shouldOhlc !== current.shouldOhlc ||
-      prev.shouldFormatBigNumber !== current.shouldFormatBigNumber ||
-      prev.visible !== current.visible ||
-      prev.zLevel !== current.zLevel ||
-      prev.extendData !== current.extendData ||
-      prev.regenerateFigures !== current.regenerateFigures ||
-      prev.createTooltipDataSource !== current.createTooltipDataSource ||
-      prev.draw !== current.draw
+  precision: number
+  calcParams: any[]
+  shouldOhlc: boolean
+  shouldFormatBigNumber: boolean
+  visible: boolean
+  zLevel: number
+  extendData: any
+  series: IndicatorSeries
+  figures: Array<IndicatorFigure<D>>
+  minValue: Nullable<number>
+  maxValue: Nullable<number>
+  styles: Nullable<Partial<IndicatorStyle>>
+  regenerateFigures: Nullable<IndicatorRegenerateFiguresCallback<D>>
+  createTooltipDataSource: Nullable<IndicatorCreateTooltipDataSourceCallback>
+  draw: Nullable<IndicatorDrawCallback<D>>
 
-    return { calc, draw }
-  }
+  result: D[] = []
 
-  calc: IndicatorCalcCallback<D, C, E> = () => ({})
-  regenerateFigures: Nullable<IndicatorRegenerateFiguresCallback<D, C>> = null
-  createTooltipDataSource: Nullable<IndicatorCreateTooltipDataSourceCallback<D>> = null
-  draw: Nullable<IndicatorDrawCallback<D, C, E>> = null
+  private _precisionFlag: boolean = false
 
-  onDataStateChange: Nullable<IndicatorOnDataStateChangeCallback<D>> = null
-
-  result: Record<Timestamp, D> = {}
-
-  private _prevIndicator: Indicator<D, C, E>
-  private _lockSeriesPrecision = false
-
-  constructor(indicator: IndicatorTemplate<D, C, E>) {
-    this.override(indicator)
-    this._lockSeriesPrecision = false
-  }
-
-  override(indicator: Partial<Indicator<D, C, E>>): void {
-    const { result, ...currentOthers } = this
-    this._prevIndicator = { ...clone(currentOthers), result }
+  constructor (indicator: IndicatorTemplate) {
     const {
-      id,
-      name,
-      shortName,
-      precision,
-      styles,
-      figures,
-      calcParams,
-      ...others
+      name, shortName, series, calcParams, figures, precision,
+      shouldOhlc, shouldFormatBigNumber, visible, zLevel,
+      minValue, maxValue, styles, extendData,
+      regenerateFigures, createTooltipDataSource, draw
     } = indicator
-    if (!isString(this.id) && isString(id)) {
-      this.id = id
-    }
-    if (!isString(this.name)) {
-      this.name = name ?? ''
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition  -- ignore
-    this.shortName = shortName ?? this.shortName ?? this.name
-    if (isNumber(precision)) {
-      this.precision = precision
-      this._lockSeriesPrecision = true
-    }
+    this.name = name
+    this.shortName = shortName ?? name
+    this.series = series ?? IndicatorSeries.Normal
+    this.precision = precision ?? 4
+    this.calcParams = calcParams ?? []
+    this.figures = figures ?? []
+    this.shouldOhlc = shouldOhlc ?? false
+    this.shouldFormatBigNumber = shouldFormatBigNumber ?? false
+    this.visible = visible ?? true
+    this.zLevel = zLevel ?? 0
+    this.minValue = minValue ?? null
+    this.maxValue = maxValue ?? null
+    this.styles = clone(styles ?? {})
+    this.extendData = extendData
+    this.regenerateFigures = regenerateFigures ?? null
+    this.createTooltipDataSource = createTooltipDataSource ?? null
+    this.draw = draw ?? null
+  }
 
-    if (isValid(styles)) {
-      this.styles ??= {}
-      merge(this.styles, styles)
+  setShortName (shortName: string): boolean {
+    if (this.shortName !== shortName) {
+      this.shortName = shortName
+      return true
     }
-    merge(this, others)
-    if (isValid(calcParams)) {
-      this.calcParams = calcParams
-      if (isFunction(this.regenerateFigures)) {
-        this.figures = this.regenerateFigures(this.calcParams)
+    return false
+  }
+
+  setSeries (series: IndicatorSeries): boolean {
+    if (this.series !== series) {
+      this.series = series
+      return true
+    }
+    return false
+  }
+
+  setPrecision (precision: number, flag?: boolean): boolean {
+    const f = flag ?? false
+    const optimalPrecision = Math.floor(precision)
+    if (optimalPrecision !== this.precision && precision >= 0 && (!f || (f && !this._precisionFlag))) {
+      this.precision = optimalPrecision
+      if (!f) {
+        this._precisionFlag = true
       }
+      return true
     }
-    this.figures = figures ?? this.figures
+    return false
   }
 
-  setSeriesPrecision(precision: number): void {
-    if (!this._lockSeriesPrecision) {
-      this.precision = precision
-    }
+  setCalcParams (params: any[]): boolean {
+    this.calcParams = params
+    this.figures = this.regenerateFigures?.(params) ?? this.figures
+    return true
   }
 
-  shouldUpdateImp(): ({ calc: boolean, draw: boolean, sort: boolean }) {
-    const sort = this._prevIndicator.zLevel !== this.zLevel
-    const result = this.shouldUpdate(this._prevIndicator, this)
-    if (isBoolean(result)) {
-      return { calc: result, draw: result, sort }
+  setShouldOhlc (shouldOhlc: boolean): boolean {
+    if (this.shouldOhlc !== shouldOhlc) {
+      this.shouldOhlc = shouldOhlc
+      return true
     }
-    return { ...result, sort }
+    return false
   }
 
-  async calcImp(dataList: KLineData[]): Promise<boolean> {
+  setShouldFormatBigNumber (shouldFormatBigNumber: boolean): boolean {
+    if (this.shouldFormatBigNumber !== shouldFormatBigNumber) {
+      this.shouldFormatBigNumber = shouldFormatBigNumber
+      return true
+    }
+    return false
+  }
+
+  setVisible (visible: boolean): boolean {
+    if (this.visible !== visible) {
+      this.visible = visible
+      return true
+    }
+    return false
+  }
+
+  setZLevel (zLevel: number): boolean {
+    if (this.zLevel !== zLevel) {
+      this.zLevel = zLevel
+      return true
+    }
+    return false
+  }
+
+  setStyles (styles: Partial<IndicatorStyle>): boolean {
+    merge(this.styles, styles)
+    return true
+  }
+
+  setExtendData (extendData: any): boolean {
+    if (this.extendData !== extendData) {
+      this.extendData = extendData
+      return true
+    }
+    return false
+  }
+
+  setFigures (figures: IndicatorFigure[]): boolean {
+    if (this.figures !== figures) {
+      this.figures = figures
+      return true
+    }
+    return false
+  }
+
+  setMinValue (value: Nullable<number>): boolean {
+    if (this.minValue !== value) {
+      this.minValue = value
+      return true
+    }
+    return false
+  }
+
+  setMaxValue (value: Nullable<number>): boolean {
+    if (this.maxValue !== value) {
+      this.maxValue = value
+      return true
+    }
+    return false
+  }
+
+  setRegenerateFigures (callback: Nullable<IndicatorRegenerateFiguresCallback>): boolean {
+    if (this.regenerateFigures !== callback) {
+      this.regenerateFigures = callback
+      return true
+    }
+    return false
+  }
+
+  setCreateTooltipDataSource (callback: Nullable<IndicatorCreateTooltipDataSourceCallback>): boolean {
+    if (this.createTooltipDataSource !== callback) {
+      this.createTooltipDataSource = callback
+      return true
+    }
+    return false
+  }
+
+  setDraw (callback: Nullable<IndicatorDrawCallback>): boolean {
+    if (this.draw !== callback) {
+      this.draw = callback
+      return true
+    }
+    return false
+  }
+
+  async calcIndicator (dataList: KLineData[]): Promise<boolean> {
     try {
       const result = await this.calc(dataList, this)
       this.result = result
@@ -432,10 +471,16 @@ export default class IndicatorImp<D = unknown, C = unknown, E = unknown> impleme
     }
   }
 
-  static extend<D = unknown>(template: IndicatorTemplate<D>): IndicatorConstructor<D> {
+  abstract calc (dataList: KLineData[], indicator: Indicator<D>): D[] | Promise<D[]>
+
+  static extend<D> (template: IndicatorTemplate): IndicatorConstructor<D> {
     class Custom extends IndicatorImp<D> {
-      constructor() {
+      constructor () {
         super(template)
+      }
+
+      calc (dataList: KLineData[], indicator: Indicator<D>): D[] | Promise<D[]> {
+        return template.calc(dataList, indicator)
       }
     }
     return Custom

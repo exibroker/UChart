@@ -14,66 +14,69 @@ limitations under the License.
 
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="keywords"
+      content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表"
+    />
+    <meta name="description" content="shape test" />
+    <script
+      type="text/javascript"
+      src="../../../dist/klinecharts.min.js"
+    ></script>
+    <script type="text/javascript" src="../../js/dataSource.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../css/chart.css" />
+    <title>Figure -- Use built-in figures</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="chart"></div>
+    <script>
+      // Testing figure bounding box with 0 width or height
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="keywords" content="kline time-line candlestick stock chart canvas k线 行情 蜡烛图 分时图 技术指标 图表" />
-  <meta name="description" content="shape test" />
-  <script type="text/javascript" src="../../../dist/ucharts.min.js"></script>
-  <script type="text/javascript" src="../../js/dataSource.js"></script>
-  <link rel="stylesheet" type="text/css" href="../../css/chart.css" />
-  <title>Figure -- Use built-in figures</title>
-</head>
-
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-  <div id="chart"></div>
-  <script>
-    // Testing figure bounding box with 0 width or height
-
-    ucharts.registerOverlay({
-      name: "rect",
-      totalStep: 3,
-      needDefaultPointFigure: true,
-      needDefaultXAxisFigure: true,
-      needDefaultYAxisFigure: true,
-      createPointFigures: ({ coordinates }) => {
-        if (coordinates.length > 1) {
-          return [
-            {
-              type: "rect",
-              attrs: {
-                x: coordinates[0].x,
-                y: coordinates[0].y,
-                width: coordinates[1].x - coordinates[0].x,
-                height: coordinates[1].y - coordinates[0].y,
-              },
-              styles: { style: "stroke_fill" },
-            },
-          ];
-        }
-        return [];
-      },
-    });
-
-    window.onload = function () {
-      var chart = ucharts.init("chart");
-      chart.createIndicator("EMA");
-      chart.applyNewData(generated());
-      // Create any
-      chart.createOverlay({
+      klinecharts.registerOverlay({
         name: "rect",
-        onDrawEnd: (coordinates) => {
-          // Create one more to test vertical and horizontal 1px lines
-          chart.createOverlay({
-            name: "rect",
-          });
+        totalStep: 3,
+        needDefaultPointFigure: true,
+        needDefaultXAxisFigure: true,
+        needDefaultYAxisFigure: true,
+        createPointFigures: ({ coordinates }) => {
+          if (coordinates.length > 1) {
+            return [
+              {
+                type: "rect",
+                attrs: {
+                  x: coordinates[0].x,
+                  y: coordinates[0].y,
+                  width: coordinates[1].x - coordinates[0].x,
+                  height: coordinates[1].y - coordinates[0].y,
+                },
+                styles: { style: "stroke_fill" },
+              },
+            ];
+          }
+          return [];
         },
       });
-    };
-  </script>
-</body>
 
+      window.onload = function () {
+        var chart = klinecharts.init("chart");
+        chart.createIndicator("EMA");
+        chart.applyNewData(generated());
+        // Create any
+        chart.createOverlay({
+          name: "rect",
+          onDrawEnd: (coordinates) => {
+            // Create one more to test vertical and horizontal 1px lines
+            chart.createOverlay({
+              name: "rect",
+            });
+          },
+        });
+      };
+    </script>
+  </body>
 </html>

@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import type { LineAttrs } from '../extension/figure/line'
+import { type LineAttrs } from '../extension/figure/line'
 
 import View from './View'
 
@@ -23,13 +23,13 @@ export default class GridView extends View {
     const chart = pane.getChart()
     const bounding = widget.getBounding()
 
-    const styles = chart.getStyles().grid
-    const show = styles.show
+    const gridStyles = chart.getStyles().grid
+    const show = gridStyles.show
 
     if (show) {
       ctx.save()
       ctx.globalCompositeOperation = 'destination-over'
-      const horizontalStyles = styles.horizontal
+      const horizontalStyles = gridStyles.horizontal
       const horizontalShow = horizontalStyles.show
       if (horizontalShow) {
         const yAxis = pane.getAxisComponent()
@@ -45,7 +45,7 @@ export default class GridView extends View {
           styles: horizontalStyles
         })?.draw(ctx)
       }
-      const verticalStyles = styles.vertical
+      const verticalStyles = gridStyles.vertical
       const verticalShow = verticalStyles.show
       if (verticalShow) {
         const xAxis = chart.getXAxisPane().getAxisComponent()

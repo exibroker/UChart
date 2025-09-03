@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Dma {
   dma?: number
@@ -23,7 +24,7 @@ interface Dma {
  * DMA
  * 公式：DIF:MA(CLOSE,N1)-MA(CLOSE,N2);DIFMA:MA(DIF,M)
  */
-const differentOfMovingAverage: IndicatorTemplate<Dma, number> = {
+const differentOfMovingAverage: IndicatorTemplate<Dma> = {
   name: 'DMA',
   shortName: 'DMA',
   calcParams: [10, 50, 10],
@@ -31,15 +32,14 @@ const differentOfMovingAverage: IndicatorTemplate<Dma, number> = {
     { key: 'dma', title: 'DMA: ', type: 'line' },
     { key: 'ama', title: 'AMA: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Dma>) => {
+    const params = indicator.calcParams as number[]
     const maxPeriod = Math.max(params[0], params[1])
     let closeSum1 = 0
     let closeSum2 = 0
     let dmaSum = 0
-    const dmaList: Dma[] = []
-    const result: Record<number, Dma> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Dma[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const dma: Dma = {}
       const close = kLineData.close
       closeSum1 += close
@@ -61,11 +61,10 @@ const differentOfMovingAverage: IndicatorTemplate<Dma, number> = {
         dmaSum += dif
         if (i >= maxPeriod + params[2] - 2) {
           dma.ama = dmaSum / params[2]
-          dmaSum -= (dmaList[i - (params[2] - 1)].dma ?? 0)
+          dmaSum -= (result[i - (params[2] - 1)].dma ?? 0)
         }
       }
-      dmaList.push(dma)
-      result[kLineData.timestamp] = dma
+      result.push(dma)
     })
     return result
   }

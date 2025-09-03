@@ -19,7 +19,7 @@
  * @param targetValue
  * @return {number}
  */
-export function binarySearchNearest<T> (dataList: T[], valueKey: keyof T, targetValue: T[keyof T]): number {
+export function binarySearchNearest<T> (dataList: T[], valueKey: keyof T, targetValue: any): number {
   let left = 0
   let right = 0
   for (right = dataList.length - 1; left !== right;) {
@@ -75,23 +75,26 @@ export function nice (value: number): number {
     nf = 8
   }
   value = nf * exp10
-  return +value.toFixed(Math.abs(exponent))
+  return exponent >= -20 ? +value.toFixed(exponent < 0 ? -exponent : 0) : value
 }
 
 /**
- * Round
+ * 四舍五入
  * @param value
  * @param precision
  * @return {number}
  */
-export function round (value: number, precision?: number): number {
-  precision = Math.max(0, precision ?? 0)
-  const pow = Math.pow(10, precision)
-  return Math.round(value * pow) / pow
+export function round (value: number, precision: number): number {
+  if (precision == null) {
+    precision = 10
+  }
+  precision = Math.min(Math.max(0, precision), 20)
+  const v = (+value).toFixed(precision)
+  return +v
 }
 
 /**
- * Get precision
+ * 获取小数位数
  * @param value
  * @return {number|number}
  */
@@ -101,38 +104,32 @@ export function getPrecision (value: number): number {
   if (eIndex > 0) {
     const precision = +str.slice(eIndex + 1)
     return precision < 0 ? -precision : 0
+  } else {
+    const dotIndex = str.indexOf('.')
+    return dotIndex < 0 ? 0 : str.length - 1 - dotIndex
   }
-  const dotIndex = str.indexOf('.')
-  return dotIndex < 0 ? 0 : str.length - 1 - dotIndex
 }
 
 export function getMaxMin<D> (dataList: D[], maxKey: keyof D, minKey: keyof D): number[] {
   const maxMin = [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
-  const dataLength = dataList.length
-  let index = 0
-  while (index < dataLength) {
-    const data = dataList[index]
-    maxMin[0] = Math.max((data[maxKey] ?? Number.MIN_SAFE_INTEGER) as number, maxMin[0])
-    maxMin[1] = Math.min((data[minKey] ?? Number.MAX_SAFE_INTEGER) as number, maxMin[1])
-    ++index
-  }
+  dataList.forEach(data => {
+    maxMin[0] = Math.max((data[maxKey] ?? data) as number, maxMin[0])
+    maxMin[1] = Math.min((data[minKey] ?? data) as number, maxMin[1])
+  })
   return maxMin
 }
 
 /**
- * log10
+ * 10为底的对数函数
  * @param value
  * @return {number}
  */
 export function log10 (value: number): number {
-  if (value === 0) {
-    return 0
-  }
-  return Math.log10(value)
+  return Math.log(value) / Math.log(10)
 }
 
 /**
- * index 10
+ * 10的指数函数
  * @param value
  * @return {number}
  */

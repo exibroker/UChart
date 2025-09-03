@@ -13,17 +13,18 @@
  */
 
 import type Bounding from '../common/Bounding'
-import type { AxisStyle, Styles } from '../common/Styles'
+import { type AxisStyle, type Styles } from '../common/Styles'
 
-import type { LineAttrs } from '../extension/figure/line'
-import type { TextAttrs } from '../extension/figure/text'
+import { type LineAttrs } from '../extension/figure/line'
+import { type TextAttrs } from '../extension/figure/text'
 
-import type { AxisTick, Axis } from '../component/Axis'
+import { type AxisTick } from '../component/Axis'
+import type Axis from '../component/Axis'
 
 import View from './View'
 
 export default abstract class AxisView<C extends Axis = Axis> extends View<C> {
-  override drawImp (ctx: CanvasRenderingContext2D, extend: unknown[]): void {
+  override drawImp (ctx: CanvasRenderingContext2D): void {
     const widget = this.getWidget()
     const pane = widget.getPane()
     const bounding = widget.getBounding()
@@ -37,26 +38,24 @@ export default abstract class AxisView<C extends Axis = Axis> extends View<C> {
           styles: styles.axisLine
         })?.draw(ctx)
       }
-      if (!(extend[0] as boolean)) {
-        const ticks = axis.getTicks()
-        if (styles.tickLine.show) {
-          const lines = this.createTickLines(ticks, bounding, styles)
-          lines.forEach(line => {
-            this.createFigure({
-              name: 'line',
-              attrs: line,
-              styles: styles.tickLine
-            })?.draw(ctx)
-          })
-        }
-        if (styles.tickText.show) {
-          const texts = this.createTickTexts(ticks, bounding, styles)
+      const ticks = axis.getTicks()
+      if (styles.tickLine.show) {
+        const lines = this.createTickLines(ticks, bounding, styles)
+        lines.forEach(line => {
           this.createFigure({
-            name: 'text',
-            attrs: texts,
-            styles: styles.tickText
+            name: 'line',
+            attrs: line,
+            styles: styles.tickLine
           })?.draw(ctx)
-        }
+        })
+      }
+      if (styles.tickText.show) {
+        const texts = this.createTickTexts(ticks, bounding, styles)
+        this.createFigure({
+          name: 'text',
+          attrs: texts,
+          styles: styles.tickText
+        })?.draw(ctx)
       }
     }
   }

@@ -14,100 +14,102 @@
 
 import type Nullable from '../common/Nullable'
 import type Bounding from '../common/Bounding'
-import { isFunction, isNumber, isString } from '../common/utils/typeChecks'
+import { calcTextWidth } from '../common/utils/canvas'
+import { isValid } from '../common/utils/typeChecks'
 
-import AxisImp, { type AxisTemplate, type Axis, type AxisRange, type AxisTick } from './Axis'
+import { type FormatDate, FormatDateType } from '../Options'
+
+import AxisImp, { type AxisTemplate, type Axis, type AxisRange, type AxisTick, type AxisCreateTicksParams } from './Axis'
 
 import type DrawPane from '../pane/DrawPane'
-import { calcTextWidth } from '../common/utils/canvas'
-import { PeriodTypeXAxisFormat } from '../common/Period'
 
-export type XAxisTemplate = Pick<AxisTemplate, 'name' | 'scrollZoomEnabled' | 'createTicks'>
+export type XAxis = Axis
 
-export interface XAxis extends Axis, Required<XAxisTemplate> {
-  convertTimestampFromPixel: (pixel: number) => Nullable<number>
-  convertTimestampToPixel: (timestamp: number) => number
-}
+export type XAxisConstructor = new (parent: DrawPane<AxisImp>) => XAxisImp
 
-export type XAxisConstructor = new (parent: DrawPane) => XAxis
-
-export default abstract class XAxisImp extends AxisImp implements XAxis {
-  constructor (parent: DrawPane, xAxis: XAxisTemplate) {
-    super(parent)
-    this.override(xAxis)
-  }
-
-  override (xAxis: XAxisTemplate): void {
-    const {
-      name,
-      scrollZoomEnabled,
-      createTicks
-    } = xAxis
-    if (!isString(this.name)) {
-      this.name = name
-    }
-    this.scrollZoomEnabled = scrollZoomEnabled ?? this.scrollZoomEnabled
-    this.createTicks = createTicks ?? this.createTicks
-  }
-
-  protected override createRangeImp (): AxisRange {
+export default abstract class XAxisImp extends AxisImp {
+  protected calcRange (): AxisRange {
     const chartStore = this.getParent().getChart().getChartStore()
-    const visibleDataRange = chartStore.getVisibleRange()
-    const { realFrom, realTo } = visibleDataRange
-    const af = realFrom
-    const at = realTo
-    const diff = realTo - realFrom + 1
-    const range = {
-      from: af,
-      to: at,
-      range: diff,
-      realFrom: af,
-      realTo: at,
-      realRange: diff,
-      displayFrom: af,
-      displayTo: at,
-      displayRange: diff
+    const { from, to } = chartStore.getTimeScaleStore().getVisibleRange()
+    const af = from
+    const at = to - 1
+    const range = to - from
+    return {
+      from: af, to: at, range, realFrom: af, realTo: at, realRange: range
     }
-    return range
   }
 
-  protected override createTicksImp (): AxisTick[] {
-    const { realFrom, realTo, from } = this.getRange()
-    const chartStore = this.getParent().getChart().getChartStore()
-    const formatDate = chartStore.getInnerFormatter().formatDate
-    const period = chartStore.getPeriod()
-    const ticks: AxisTick[] = []
-
-    const barSpace = chartStore.getBarSpace().bar
-    const textStyles = chartStore.getStyles().xAxis.tickText
-    const tickTextWidth = Math.max(calcTextWidth('YYYY-MM-DD HH:mm:ss', textStyles.size, textStyles.weight, textStyles.family), this.getBounding().width / 8)
-    let tickBetweenBarCount = Math.ceil(tickTextWidth / barSpace)
-    if (tickBetweenBarCount % 2 !== 0) {
-      tickBetweenBarCount += 1
-    }
-    const startDataIndex = Math.max(0, Math.floor(realFrom / tickBetweenBarCount) * tickBetweenBarCount)
-
-    for (let i = startDataIndex; i < realTo; i += tickBetweenBarCount) {
-      if (i >= from) {
-        const timestamp = chartStore.dataIndexToTimestamp(i)
-        if (isNumber(timestamp)) {
-          ticks.push({
-            coord: this.convertToPixel(i),
-            value: timestamp,
-            text: formatDate(timestamp, PeriodTypeXAxisFormat[period?.type ?? 'day'], 'xAxis')
-          })
+  protected optimalTicks (ticks: AxisTick[]): AxisTick[] {
+    const chart = this.getParent().getChart()
+    const chartStore = chart.getChartStore()
+    const formatDate = chartStore.getCustomApi().formatDate
+    const optimalTicks: AxisTick[] = []
+    const tickLength = ticks.length
+    const dataList = chartStore.getDataList()
+    if (tickLength > 0) {
+      const dateTimeFormat = chartStore.getTimeScaleStore().getDateTimeFormat()
+      const tickTextStyles = chart.getStyles().xAxis.tickText
+      const defaultLabelWidth = calcTextWidth('00-00 00:00', tickTextStyles.size, tickTextStyles.weight, tickTextStyles.family)
+      const pos = parseInt(ticks[0].value as string, 10)
+      const x = this.convertToPixel(pos)
+      let tickCountDif = 1
+      if (tickLength > 1) {
+        const nextPos = parseInt(ticks[1].value as string, 10)
+        const nextX = this.convertToPixel(nextPos)
+        const xDif = Math.abs(nextX - x)
+        if (xDif < defaultLabelWidth) {
+          tickCountDif = Math.ceil(defaultLabelWidth / xDif)
+        }
+      }
+      for (let i = 0; i < tickLength; i += tickCountDif) {
+        const pos = parseInt(ticks[i].value as string, 10)
+        const kLineData = dataList[pos]
+        const timestamp = kLineData.timestamp
+        let text = formatDate(dateTimeFormat, timestamp, 'HH:mm', FormatDateType.XAxis)
+        if (i !== 0) {
+          const prevPos = parseInt(ticks[i - tickCountDif].value as string, 10)
+          const prevKLineData = dataList[prevPos]
+          const prevTimestamp = prevKLineData.timestamp
+          text = this._optimalTickLabel(formatDate, dateTimeFormat, timestamp, prevTimestamp) ?? text
+        }
+        const x = this.convertToPixel(pos)
+        optimalTicks.push({ text, coord: x, value: timestamp })
+      }
+      const optimalTickLength = optimalTicks.length
+      if (optimalTickLength === 1) {
+        optimalTicks[0].text = formatDate(dateTimeFormat, optimalTicks[0].value as number, 'YYYY-MM-DD HH:mm', FormatDateType.XAxis)
+      } else {
+        const firstTimestamp = optimalTicks[0].value as number
+        const secondTimestamp = optimalTicks[1].value as number
+        if (isValid(optimalTicks[2])) {
+          const thirdText = optimalTicks[2].text
+          if (/^[0-9]{2}-[0-9]{2}$/.test(thirdText)) {
+            optimalTicks[0].text = formatDate(dateTimeFormat, firstTimestamp, 'MM-DD', FormatDateType.XAxis)
+          } else if (/^[0-9]{4}-[0-9]{2}$/.test(thirdText)) {
+            optimalTicks[0].text = formatDate(dateTimeFormat, firstTimestamp, 'YYYY-MM', FormatDateType.XAxis)
+          } else if (/^[0-9]{4}$/.test(thirdText)) {
+            optimalTicks[0].text = formatDate(dateTimeFormat, firstTimestamp, 'YYYY', FormatDateType.XAxis)
+          }
+        } else {
+          optimalTicks[0].text = this._optimalTickLabel(formatDate, dateTimeFormat, firstTimestamp, secondTimestamp) ?? optimalTicks[0].text
         }
       }
     }
+    return optimalTicks
+  }
 
-    if (isFunction(this.createTicks)) {
-      return this.createTicks({
-        range: this.getRange(),
-        bounding: this.getBounding(),
-        defaultTicks: ticks
-      })
+  private _optimalTickLabel (formatDate: FormatDate, dateTimeFormat: Intl.DateTimeFormat, timestamp: number, comparedTimestamp: number): Nullable<string> {
+    const year = formatDate(dateTimeFormat, timestamp, 'YYYY', FormatDateType.XAxis)
+    const month = formatDate(dateTimeFormat, timestamp, 'YYYY-MM', FormatDateType.XAxis)
+    const day = formatDate(dateTimeFormat, timestamp, 'MM-DD', FormatDateType.XAxis)
+    if (year !== formatDate(dateTimeFormat, comparedTimestamp, 'YYYY', FormatDateType.XAxis)) {
+      return year
+    } else if (month !== formatDate(dateTimeFormat, comparedTimestamp, 'YYYY-MM', FormatDateType.XAxis)) {
+      return month
+    } else if (day !== formatDate(dateTimeFormat, comparedTimestamp, 'MM-DD', FormatDateType.XAxis)) {
+      return day
     }
-    return ticks
+    return null
   }
 
   override getAutoSize (): number {
@@ -146,34 +148,34 @@ export default abstract class XAxisImp extends AxisImp implements XAxis {
     return Math.max(xAxisHeight, crosshairVerticalTextHeight)
   }
 
-  protected override getBounding (): Bounding {
+  getSelfBounding (): Bounding {
     return this.getParent().getMainWidget().getBounding()
   }
 
   convertTimestampFromPixel (pixel: number): Nullable<number> {
-    const chartStore = this.getParent().getChart().getChartStore()
-    const dataIndex = chartStore.coordinateToDataIndex(pixel)
-    return chartStore.dataIndexToTimestamp(dataIndex)
+    const timeScaleStore = this.getParent().getChart().getChartStore().getTimeScaleStore()
+    const dataIndex = timeScaleStore.coordinateToDataIndex(pixel)
+    return timeScaleStore.dataIndexToTimestamp(dataIndex)
   }
 
   convertTimestampToPixel (timestamp: number): number {
-    const chartStore = this.getParent().getChart().getChartStore()
-    const dataIndex = chartStore.timestampToDataIndex(timestamp)
-    return chartStore.dataIndexToCoordinate(dataIndex)
+    const timeScaleStore = this.getParent().getChart().getChartStore().getTimeScaleStore()
+    const dataIndex = timeScaleStore.timestampToDataIndex(timestamp)
+    return timeScaleStore.dataIndexToCoordinate(dataIndex)
   }
 
   convertFromPixel (pixel: number): number {
-    return this.getParent().getChart().getChartStore().coordinateToDataIndex(pixel)
+    return this.getParent().getChart().getChartStore().getTimeScaleStore().coordinateToDataIndex(pixel)
   }
 
   convertToPixel (value: number): number {
-    return this.getParent().getChart().getChartStore().dataIndexToCoordinate(value)
+    return this.getParent().getChart().getChartStore().getTimeScaleStore().dataIndexToCoordinate(value)
   }
 
-  static extend (template: XAxisTemplate): XAxisConstructor {
+  static extend (template: AxisTemplate): XAxisConstructor {
     class Custom extends XAxisImp {
-      constructor (parent: DrawPane) {
-        super(parent, template)
+      createTicks (params: AxisCreateTicksParams): AxisTick[] {
+        return template.createTicks(params)
       }
     }
     return Custom

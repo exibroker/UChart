@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Mtm {
   mtm?: number
@@ -23,7 +24,7 @@ interface Mtm {
  * mtm
  * 公式 MTM（N日）=C－CN
  */
-const momentum: IndicatorTemplate<Mtm, number> = {
+const momentum: IndicatorTemplate<Mtm> = {
   name: 'MTM',
   shortName: 'MTM',
   calcParams: [12, 6],
@@ -31,12 +32,11 @@ const momentum: IndicatorTemplate<Mtm, number> = {
     { key: 'mtm', title: 'MTM: ', type: 'line' },
     { key: 'maMtm', title: 'MAMTM: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Mtm>) => {
+    const params = indicator.calcParams as number[]
     let mtmSum = 0
-    const mtmList: Mtm[] = []
-    const result: Record<number, Mtm> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Mtm[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const mtm: Mtm = {}
       if (i >= params[0]) {
         const close = kLineData.close
@@ -45,11 +45,10 @@ const momentum: IndicatorTemplate<Mtm, number> = {
         mtmSum += mtm.mtm
         if (i >= params[0] + params[1] - 1) {
           mtm.maMtm = mtmSum / params[1]
-          mtmSum -= (mtmList[i - (params[1] - 1)].mtm ?? 0)
+          mtmSum -= (result[i - (params[1] - 1)].mtm ?? 0)
         }
       }
-      mtmList.push(mtm)
-      result[kLineData.timestamp] = mtm
+      result.push(mtm)
     })
     return result
   }

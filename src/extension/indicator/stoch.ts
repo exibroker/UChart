@@ -12,8 +12,8 @@
  * limitations under the License.
  */
 
-import type { KLineData } from '../../common/Data'
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 import { getMaxMin } from '../../common/utils/number'
 
@@ -31,7 +31,7 @@ interface Kdj {
  * 若无前一日K 值与D值，则可分别用50来代替。
  * J值=3*当日K值-2*当日D值
  */
-const stoch: IndicatorTemplate<Kdj, number> = {
+const stoch: IndicatorTemplate<Kdj> = {
   name: 'KDJ',
   shortName: 'KDJ',
   calcParams: [9, 3, 3],
@@ -40,11 +40,10 @@ const stoch: IndicatorTemplate<Kdj, number> = {
     { key: 'd', title: 'D: ', type: 'line' },
     { key: 'j', title: 'J: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
+  calc: (dataList: KLineData[], indicator: Indicator<Kdj>) => {
     const params = indicator.calcParams
-    const kdjList: Kdj[] = []
-    const result: Record<number, Kdj> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Kdj[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const kdj: Kdj = {}
       const close = kLineData.close
       if (i >= params[0] - 1) {
@@ -53,12 +52,11 @@ const stoch: IndicatorTemplate<Kdj, number> = {
         const ln = lhn[1]
         const hnSubLn = hn - ln
         const rsv = (close - ln) / (hnSubLn === 0 ? 1 : hnSubLn) * 100
-        kdj.k = ((params[1] - 1) * (kdjList[i - 1]?.k ?? 50) + rsv) / params[1]
-        kdj.d = ((params[2] - 1) * (kdjList[i - 1]?.d ?? 50) + kdj.k) / params[2]
+        kdj.k = ((params[1] - 1) * (result[i - 1]?.k ?? 50) + rsv) / params[1]
+        kdj.d = ((params[2] - 1) * (result[i - 1]?.d ?? 50) + kdj.k) / params[2]
         kdj.j = 3.0 * kdj.k - 2.0 * kdj.d
       }
-      kdjList.push(kdj)
-      result[kLineData.timestamp] = kdj
+      result.push(kdj)
     })
     return result
   }

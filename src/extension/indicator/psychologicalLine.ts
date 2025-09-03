@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Psy {
   psy?: number
@@ -23,7 +24,7 @@ interface Psy {
  * PSY
  * 公式：PSY=N日内的上涨天数/N×100%。
  */
-const psychologicalLine: IndicatorTemplate<Psy, number> = {
+const psychologicalLine: IndicatorTemplate<Psy> = {
   name: 'PSY',
   shortName: 'PSY',
   calcParams: [12, 6],
@@ -31,14 +32,13 @@ const psychologicalLine: IndicatorTemplate<Psy, number> = {
     { key: 'psy', title: 'PSY: ', type: 'line' },
     { key: 'maPsy', title: 'MAPSY: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
+  calc: (dataList: KLineData[], indicator: Indicator<Psy>) => {
+    const params = indicator.calcParams as number[]
     let upCount = 0
     let psySum = 0
     const upList: number[] = []
-    const psyList: Psy[] = []
-    const result: Record<number, Psy> = {}
-    dataList.forEach((kLineData, i) => {
+    const result: Psy[] = []
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const psy: Psy = {}
       const prevClose = (dataList[i - 1] ?? kLineData).close
       const upFlag = kLineData.close - prevClose > 0 ? 1 : 0
@@ -49,12 +49,11 @@ const psychologicalLine: IndicatorTemplate<Psy, number> = {
         psySum += psy.psy
         if (i >= params[0] + params[1] - 2) {
           psy.maPsy = psySum / params[1]
-          psySum -= (psyList[i - (params[1] - 1)].psy ?? 0)
+          psySum -= (result[i - (params[1] - 1)].psy ?? 0)
         }
         upCount -= upList[i - (params[0] - 1)]
       }
-      psyList.push(psy)
-      result[kLineData.timestamp] = psy
+      result.push(psy)
     })
     return result
   }

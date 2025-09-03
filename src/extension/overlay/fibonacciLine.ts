@@ -12,13 +12,13 @@
  * limitations under the License.
  */
 
+import { formatThousands, formatFoldDecimal } from '../../common/utils/format'
 import { isNumber } from '../../common/utils/typeChecks'
-import { SymbolDefaultPrecisionConstants } from '../../common/SymbolInfo'
 
-import type { OverlayTemplate } from '../../component/Overlay'
+import { type OverlayTemplate } from '../../component/Overlay'
 
-import type { LineAttrs } from '../figure/line'
-import type { TextAttrs } from '../figure/text'
+import { type LineAttrs } from '../figure/line'
+import { type TextAttrs } from '../figure/text'
 
 const fibonacciLine: OverlayTemplate = {
   name: 'fibonacciLine',
@@ -26,19 +26,10 @@ const fibonacciLine: OverlayTemplate = {
   needDefaultPointFigure: true,
   needDefaultXAxisFigure: true,
   needDefaultYAxisFigure: true,
-  createPointFigures: ({ chart, coordinates, bounding, overlay, yAxis }) => {
+  createPointFigures: ({ coordinates, bounding, overlay, precision, thousandsSeparator, decimalFoldThreshold, yAxis }) => {
     const points = overlay.points
-
     if (coordinates.length > 0) {
-      let precision = 0
-      if (yAxis?.isInCandle() ?? true) {
-        precision = chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE
-      } else {
-        const indicators = chart.getIndicators({ paneId: overlay.paneId })
-        indicators.forEach(indicator => {
-          precision = Math.max(precision, indicator.precision)
-        })
-      }
+      const currentPrecision = (yAxis?.isInCandle() ?? true) ? precision.price : precision.excludePriceVolumeMax
       const lines: LineAttrs[] = []
       const texts: TextAttrs[] = []
       const startX = 0
@@ -49,7 +40,7 @@ const fibonacciLine: OverlayTemplate = {
         const valueDif = points[0].value - points[1].value
         percents.forEach(percent => {
           const y = coordinates[1].y + yDif * percent
-          const value = chart.getDecimalFold().format(chart.getThousandsSeparator().format(((points[1].value ?? 0) + valueDif * percent).toFixed(precision)))
+          const value = formatFoldDecimal(formatThousands(((points[1].value ?? 0) + valueDif * percent).toFixed(currentPrecision), thousandsSeparator), decimalFoldThreshold)
           lines.push({ coordinates: [{ x: startX, y }, { x: endX, y }] })
           texts.push({
             x: startX,

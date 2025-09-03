@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import type Nullable from '../common/Nullable'
 import { UpdateLevel } from '../common/Updater'
 import type Bounding from '../common/Bounding'
 import { merge } from '../common/utils/typeChecks'
@@ -31,8 +32,8 @@ export default class SeparatorPane extends Pane {
 
   private readonly _separatorWidget: SeparatorWidget
 
-  constructor (chart: Chart, id: string, topPane: DrawPane, bottomPane: DrawPane) {
-    super(chart, id)
+  constructor (rootContainer: HTMLElement, afterElement: Nullable<HTMLElement>, chart: Chart, id: string, topPane: DrawPane, bottomPane: DrawPane) {
+    super(rootContainer, afterElement, chart, id)
     this.getContainer().style.overflow = ''
     this._topPane = topPane
     this._bottomPane = bottomPane

@@ -13,27 +13,30 @@
  */
 
 import type Nullable from '../common/Nullable'
-import type { VisibleRangeData } from '../common/Data'
+import type VisibleData from '../common/VisibleData'
 import type BarSpace from '../common/BarSpace'
-import { isValid } from '../common/utils/typeChecks'
-import type { EventHandler } from '../common/EventHandler'
-import type { CandleType, CandleBarColor, RectStyle } from '../common/Styles'
+import { type EventHandler } from '../common/SyntheticEvent'
+import { ActionType } from '../common/Action'
+import { CandleType, type CandleBarColor, type RectStyle, PolygonType } from '../common/Styles'
 
-import type { FigureCreate } from '../component/Figure'
-import type { RectAttrs } from '../extension/figure/rect'
+import type ChartStore from '../store/ChartStore'
+
+import { type FigureCreate } from '../component/Figure'
+import { type RectAttrs } from '../extension/figure/rect'
 
 import ChildrenView from './ChildrenView'
 
 import { PaneIdConstants } from '../pane/types'
+import { isValid } from '../common/utils/typeChecks'
 
 export interface CandleBarOptions {
-  type: Exclude<CandleType, 'area'>
+  type: Exclude<CandleType, CandleType.Area>
   styles: CandleBarColor
 }
 
 export default class CandleBarView extends ChildrenView {
-  private readonly _boundCandleBarClickEvent = (data: VisibleRangeData) => () => {
-    this.getWidget().getPane().getChart().getChartStore().executeAction('onCandleBarClick', data)
+  private readonly _boundCandleBarClickEvent = (data: VisibleData) => () => {
+    this.getWidget().getPane().getChart().getChartStore().getActionStore().execute(ActionType.OnCandleBarClick, data)
     return false
   }
 
@@ -41,31 +44,30 @@ export default class CandleBarView extends ChildrenView {
     const pane = this.getWidget().getPane()
     const isMain = pane.getId() === PaneIdConstants.CANDLE
     const chartStore = pane.getChart().getChartStore()
-    const candleBarOptions = this.getCandleBarOptions()
+    const candleBarOptions = this.getCandleBarOptions(chartStore)
     if (candleBarOptions !== null) {
-      const { type, styles } = candleBarOptions
       let ohlcSize = 0
       let halfOhlcSize = 0
-      if (candleBarOptions.type === 'ohlc') {
-        const { gapBar } = chartStore.getBarSpace()
+      if (candleBarOptions.type === CandleType.Ohlc) {
+        const { gapBar } = chartStore.getTimeScaleStore().getBarSpace()
         ohlcSize = Math.min(Math.max(Math.round(gapBar * 0.2), 1), 8)
         if (ohlcSize > 2 && ohlcSize % 2 === 1) {
           ohlcSize--
         }
-        halfOhlcSize = Math.floor(ohlcSize / 2)
+        halfOhlcSize = Math.floor(halfOhlcSize / 2)
       }
       const yAxis = pane.getAxisComponent()
-      this.eachChildren((visibleData, barSpace) => {
-        const { x, data: { current, prev } } = visibleData
-        if (isValid(current)) {
-          const { open, high, low, close } = current
-          const comparePrice = styles.compareRule === 'current_open' ? open : (prev?.close ?? close)
+      this.eachChildren((data, barSpace) => {
+        const { data: kLineData, x } = data
+        if (isValid(kLineData)) {
+          const { open, high, low, close } = kLineData
+          const { type, styles } = candleBarOptions
           const colors: string[] = []
-          if (close > comparePrice) {
+          if (close > open) {
             colors[0] = styles.upColor
             colors[1] = styles.upBorderColor
             colors[2] = styles.upWickColor
-          } else if (close < comparePrice) {
+          } else if (close < open) {
             colors[0] = styles.downColor
             colors[1] = styles.downBorderColor
             colors[2] = styles.downWickColor
@@ -83,34 +85,33 @@ export default class CandleBarView extends ChildrenView {
           ]
           priceY.sort((a, b) => a - b)
 
-          const correction = barSpace.gapBar % 2 === 0 ? 1 : 0
           let rects: Array<FigureCreate<RectAttrs | RectAttrs[], Partial<RectStyle>>> = []
           switch (type) {
-            case 'candle_solid': {
-              rects = this._createSolidBar(x, priceY, barSpace, colors, correction)
+            case CandleType.CandleSolid: {
+              rects = this._createSolidBar(x, priceY, barSpace, colors)
               break
             }
-            case 'candle_stroke': {
-              rects = this._createStrokeBar(x, priceY, barSpace, colors, correction)
+            case CandleType.CandleStroke: {
+              rects = this._createStrokeBar(x, priceY, barSpace, colors)
               break
             }
-            case 'candle_up_stroke': {
+            case CandleType.CandleUpStroke: {
               if (close > open) {
-                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction)
+                rects = this._createStrokeBar(x, priceY, barSpace, colors)
               } else {
-                rects = this._createSolidBar(x, priceY, barSpace, colors, correction)
+                rects = this._createSolidBar(x, priceY, barSpace, colors)
               }
               break
             }
-            case 'candle_down_stroke': {
+            case CandleType.CandleDownStroke: {
               if (open > close) {
-                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction)
+                rects = this._createStrokeBar(x, priceY, barSpace, colors)
               } else {
-                rects = this._createSolidBar(x, priceY, barSpace, colors, correction)
+                rects = this._createSolidBar(x, priceY, barSpace, colors)
               }
               break
             }
-            case 'ohlc': {
+            case CandleType.Ohlc: {
               rects = [
                 {
                   name: 'rect',
@@ -124,7 +125,7 @@ export default class CandleBarView extends ChildrenView {
                     {
                       x: x - barSpace.halfGapBar,
                       y: openY + ohlcSize > priceY[3] ? priceY[3] - ohlcSize : openY,
-                      width: barSpace.halfGapBar - halfOhlcSize,
+                      width: barSpace.halfGapBar,
                       height: ohlcSize
                     },
                     {
@@ -141,28 +142,28 @@ export default class CandleBarView extends ChildrenView {
             }
           }
           rects.forEach(rect => {
-            let handler: Nullable<EventHandler> = null
+            let handler: EventHandler | undefined
             if (isMain) {
               handler = {
-                mouseClickEvent: this._boundCandleBarClickEvent(visibleData)
+                mouseClickEvent: this._boundCandleBarClickEvent(data)
               }
             }
-            this.createFigure(rect, handler ?? undefined)?.draw(ctx)
+            this.createFigure(rect, handler)?.draw(ctx)
           })
         }
       })
     }
   }
 
-  protected getCandleBarOptions (): Nullable<CandleBarOptions> {
-    const candleStyles = this.getWidget().getPane().getChart().getStyles().candle
+  protected getCandleBarOptions (chartStore: ChartStore): Nullable<CandleBarOptions> {
+    const candleStyles = chartStore.getStyles().candle
     return {
-      type: candleStyles.type as Exclude<CandleType, 'area'>,
+      type: candleStyles.type as Exclude<CandleType, CandleType.Area>,
       styles: candleStyles.bar
     }
   }
 
-  private _createSolidBar (x: number, priceY: number[], barSpace: BarSpace, colors: string[], correction: number): Array<FigureCreate<RectAttrs | RectAttrs[], Partial<RectStyle>>> {
+  private _createSolidBar (x: number, priceY: number[], barSpace: BarSpace, colors: string[]): Array<FigureCreate<RectAttrs | RectAttrs[], Partial<RectStyle>>> {
     return [
       {
         name: 'rect',
@@ -179,11 +180,11 @@ export default class CandleBarView extends ChildrenView {
         attrs: {
           x: x - barSpace.halfGapBar,
           y: priceY[1],
-          width: barSpace.gapBar + correction,
+          width: barSpace.gapBar,
           height: Math.max(1, priceY[2] - priceY[1])
         },
         styles: {
-          style: 'stroke_fill',
+          style: PolygonType.StrokeFill,
           color: colors[0],
           borderColor: colors[1]
         }
@@ -191,7 +192,7 @@ export default class CandleBarView extends ChildrenView {
     ]
   }
 
-  private _createStrokeBar (x: number, priceY: number[], barSpace: BarSpace, colors: string[], correction: number): Array<FigureCreate<RectAttrs | RectAttrs[], Partial<RectStyle>>> {
+  private _createStrokeBar (x: number, priceY: number[], barSpace: BarSpace, colors: string[]): Array<FigureCreate<RectAttrs | RectAttrs[], Partial<RectStyle>>> {
     return [
       {
         name: 'rect',
@@ -216,11 +217,11 @@ export default class CandleBarView extends ChildrenView {
         attrs: {
           x: x - barSpace.halfGapBar,
           y: priceY[1],
-          width: barSpace.gapBar + correction,
+          width: barSpace.gapBar,
           height: Math.max(1, priceY[2] - priceY[1])
         },
         styles: {
-          style: 'stroke',
+          style: PolygonType.Stroke,
           borderColor: colors[1]
         }
       }

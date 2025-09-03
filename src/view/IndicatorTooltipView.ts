@@ -12,92 +12,95 @@
  * limitations under the License.
  */
 
+import type Nullable from '../common/Nullable'
+import type KLineData from '../common/KLineData'
 import type Crosshair from '../common/Crosshair'
-import type { TooltipStyle, TooltipTextStyle, TooltipLegend, TooltipLegendChild, TooltipFeatureStyle, FeatureIconFontStyle, FeaturePathStyle } from '../common/Styles'
-import { formatPrecision } from '../common/utils/format'
-import { isValid, isObject, isString, isNumber, isFunction } from '../common/utils/typeChecks'
+import { type IndicatorStyle, type TooltipStyle, type TooltipIconStyle, type TooltipTextStyle, type TooltipLegend, TooltipShowRule, type TooltipLegendChild, TooltipIconPosition } from '../common/Styles'
+import { ActionType } from '../common/Action'
+import { formatPrecision, formatThousands, formatFoldDecimal } from '../common/utils/format'
+import { isValid, isObject, isString, isNumber } from '../common/utils/typeChecks'
 import { createFont } from '../common/utils/canvas'
 import type Coordinate from '../common/Coordinate'
-import type Nullable from '../common/Nullable'
-import type { ActionType } from '../common/Action'
 
-import type { YAxis } from '../component/YAxis'
+import { type CustomApi } from '../Options'
 
-import type { Indicator, IndicatorFigure, IndicatorFigureStyle, IndicatorTooltipData } from '../component/Indicator'
+import type YAxis from '../component/YAxis'
+
+import { type Indicator, type IndicatorFigure, type IndicatorFigureStyle, type IndicatorTooltipData } from '../component/Indicator'
+import type IndicatorImp from '../component/Indicator'
 import { eachFigures } from '../component/Indicator'
 
-import type DrawPane from '../pane/DrawPane'
-import type DrawWidget from '../widget/DrawWidget'
+import { type TooltipIcon } from '../store/TooltipStore'
+
 import View from './View'
 
-interface TooltipFeatureInfo {
-  paneId: string
-  indicator?: Indicator
-  feature: TooltipFeatureStyle
-}
-
 export default class IndicatorTooltipView extends View<YAxis> {
-  private _activeFeatureInfo: Nullable<TooltipFeatureInfo> = null
-
-  private readonly _featureClickEvent = (type: ActionType, featureInfo: TooltipFeatureInfo) => () => {
+  private readonly _boundIconClickEvent = (currentIcon: TooltipIcon) => () => {
     const pane = this.getWidget().getPane()
-    pane.getChart().getChartStore().executeAction(type, featureInfo)
+    pane.getChart().getChartStore().getActionStore().execute(ActionType.OnTooltipIconClick, { ...currentIcon })
     return true
   }
 
-  private readonly _featureMouseMoveEvent = (featureInfo: TooltipFeatureInfo) => () => {
-    this._activeFeatureInfo = featureInfo
+  private readonly _boundIconMouseMoveEvent = (currentIconInfo: TooltipIcon) => () => {
+    const pane = this.getWidget().getPane()
+    const tooltipStore = pane.getChart().getChartStore().getTooltipStore()
+    tooltipStore.setActiveIcon({ ...currentIconInfo })
     return true
-  }
-
-  constructor (widget: DrawWidget<DrawPane<YAxis>>) {
-    super(widget)
-    this.registerEvent('mouseMoveEvent', _ => {
-      this._activeFeatureInfo = null
-      return false
-    })
   }
 
   override drawImp (ctx: CanvasRenderingContext2D): void {
     const widget = this.getWidget()
     const pane = widget.getPane()
     const chartStore = pane.getChart().getChartStore()
-    const crosshair = chartStore.getCrosshair()
+    const crosshair = chartStore.getTooltipStore().getCrosshair()
     if (isValid(crosshair.kLineData)) {
       const bounding = widget.getBounding()
-      const { offsetLeft, offsetTop, offsetRight } = chartStore.getStyles().indicator.tooltip
+      const customApi = chartStore.getCustomApi()
+      const thousandsSeparator = chartStore.getThousandsSeparator()
+      const decimalFoldThreshold = chartStore.getDecimalFoldThreshold()
+      const indicators = chartStore.getIndicatorStore().getInstances(pane.getId())
+      const activeIcon = chartStore.getTooltipStore().getActiveIcon()
+      const defaultStyles = chartStore.getStyles().indicator
+      const { offsetLeft, offsetTop, offsetRight } = defaultStyles.tooltip
       this.drawIndicatorTooltip(
-        ctx, offsetLeft, offsetTop,
-        bounding.width - offsetRight
+        ctx, pane.getId(), chartStore.getDataList(),
+        crosshair, activeIcon, indicators, customApi,
+        thousandsSeparator, decimalFoldThreshold,
+        offsetLeft, offsetTop,
+        bounding.width - offsetRight, defaultStyles
       )
     }
   }
 
   protected drawIndicatorTooltip (
     ctx: CanvasRenderingContext2D,
+    paneId: string,
+    dataList: KLineData[],
+    crosshair: Crosshair,
+    activeTooltipIcon: Nullable<TooltipIcon>,
+    indicators: IndicatorImp[],
+    customApi: CustomApi,
+    thousandsSeparator: string,
+    decimalFoldThreshold: number,
     left: number,
     top: number,
-    maxWidth: number
+    maxWidth: number,
+    styles: IndicatorStyle
   ): number {
-    const pane = this.getWidget().getPane()
-    const chartStore = pane.getChart().getChartStore()
-    const styles = chartStore.getStyles().indicator
     const tooltipStyles = styles.tooltip
-    if (this.isDrawTooltip(chartStore.getCrosshair(), tooltipStyles)) {
-      const indicators = chartStore.getIndicatorsByPaneId(pane.getId())
-      const tooltipTitleStyles = tooltipStyles.title
-      const tooltipLegendStyles = tooltipStyles.legend
+    if (this.isDrawTooltip(crosshair, tooltipStyles)) {
+      const tooltipTextStyles = tooltipStyles.text
       indicators.forEach(indicator => {
         let prevRowHeight = 0
         const coordinate = { x: left, y: top }
-        const { name, calcParamsText, legends, features: featuresStyles } = this.getIndicatorTooltipData(indicator)
+        const { name, calcParamsText, values: legends, icons } = this.getIndicatorTooltipData(dataList, crosshair, indicator, customApi, thousandsSeparator, decimalFoldThreshold, styles)
         const nameValid = name.length > 0
         const legendValid = legends.length > 0
         if (nameValid || legendValid) {
-          const features = this.classifyTooltipFeatures(featuresStyles)
-          prevRowHeight = this.drawStandardTooltipFeatures(
-            ctx, features[0],
-            coordinate, indicator,
+          const [leftIcons, middleIcons, rightIcons] = this.classifyTooltipIcons(icons)
+          prevRowHeight = this.drawStandardTooltipIcons(
+            ctx, activeTooltipIcon, leftIcons,
+            coordinate, paneId, indicator.name,
             left, prevRowHeight, maxWidth
           )
 
@@ -106,36 +109,35 @@ export default class IndicatorTooltipView extends View<YAxis> {
             if (calcParamsText.length > 0) {
               text = `${text}${calcParamsText}`
             }
-            const color = tooltipTitleStyles.color
             prevRowHeight = this.drawStandardTooltipLegends(
               ctx,
               [
                 {
-                  title: { text: '', color },
-                  value: { text, color }
+                  title: { text: '', color: tooltipTextStyles.color },
+                  value: { text, color: tooltipTextStyles.color }
                 }
               ],
-              coordinate, left, prevRowHeight, maxWidth, tooltipTitleStyles
+              coordinate, left, prevRowHeight, maxWidth, tooltipTextStyles
             )
           }
 
-          prevRowHeight = this.drawStandardTooltipFeatures(
-            ctx, features[1],
-            coordinate, indicator,
+          prevRowHeight = this.drawStandardTooltipIcons(
+            ctx, activeTooltipIcon, middleIcons,
+            coordinate, paneId, indicator.name,
             left, prevRowHeight, maxWidth
           )
 
           if (legendValid) {
             prevRowHeight = this.drawStandardTooltipLegends(
               ctx, legends, coordinate,
-              left, prevRowHeight, maxWidth, tooltipLegendStyles
+              left, prevRowHeight, maxWidth, tooltipStyles.text
             )
           }
 
-          // draw right features
-          prevRowHeight = this.drawStandardTooltipFeatures(
-            ctx, features[2],
-            coordinate, indicator,
+          // draw right icons
+          prevRowHeight = this.drawStandardTooltipIcons(
+            ctx, activeTooltipIcon, rightIcons,
+            coordinate, paneId, indicator.name,
             left, prevRowHeight, maxWidth
           )
           top = coordinate.y + prevRowHeight
@@ -145,33 +147,28 @@ export default class IndicatorTooltipView extends View<YAxis> {
     return top
   }
 
-  protected drawStandardTooltipFeatures (
+  protected drawStandardTooltipIcons (
     ctx: CanvasRenderingContext2D,
-    features: TooltipFeatureStyle[],
+    activeIcon: Nullable<TooltipIcon>,
+    icons: TooltipIconStyle[],
     coordinate: Coordinate,
-    indicator: Nullable<Indicator>,
+    paneId: string,
+    indicatorName: string,
     left: number,
     prevRowHeight: number,
     maxWidth: number
   ): number {
-    if (features.length > 0) {
+    if (icons.length > 0) {
       let width = 0
       let height = 0
-      features.forEach(feature => {
+      icons.forEach(icon => {
         const {
           marginLeft = 0, marginTop = 0, marginRight = 0, marginBottom = 0,
           paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0,
-          size = 0, type, content
-        } = feature
-        let contentWidth = 0
-        if (type === 'icon_font') {
-          const iconFont = content as FeatureIconFontStyle
-          ctx.font = createFont(size, 'normal', iconFont.family)
-          contentWidth = ctx.measureText(iconFont.code).width
-        } else {
-          contentWidth = size
-        }
-        width += (marginLeft + paddingLeft + contentWidth + paddingRight + marginRight)
+          size, fontFamily, icon: text
+        } = icon
+        ctx.font = createFont(size, 'normal', fontFamily)
+        width += (marginLeft + paddingLeft + ctx.measureText(text).width + paddingRight + marginRight)
         height = Math.max(height, marginTop + paddingTop + size + paddingBottom + marginBottom)
       })
       if (coordinate.x + width > maxWidth) {
@@ -181,85 +178,32 @@ export default class IndicatorTooltipView extends View<YAxis> {
       } else {
         prevRowHeight = Math.max(prevRowHeight, height)
       }
-      const pane = this.getWidget().getPane()
-      const paneId = pane.getId()
-
-      features.forEach(feature => {
+      icons.forEach(icon => {
         const {
           marginLeft = 0, marginTop = 0, marginRight = 0,
           paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0,
-          backgroundColor, activeBackgroundColor, borderRadius,
-          size = 0, color, activeColor, type, content
-        } = feature
-
-        let finalColor = color
-        let finalBackgroundColor = backgroundColor
-        if (
-          this._activeFeatureInfo?.paneId === paneId &&
-          this._activeFeatureInfo.indicator?.id === indicator?.id &&
-          this._activeFeatureInfo.feature.id === feature.id
-        ) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-          finalColor = activeColor ?? color
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-          finalBackgroundColor = activeBackgroundColor ?? backgroundColor
-        }
-        let actionType: ActionType = 'onCandleTooltipFeatureClick'
-        const featureInfo: TooltipFeatureInfo = {
-          paneId, feature
-        }
-        if (isValid(indicator)) {
-          actionType = 'onIndicatorTooltipFeatureClick'
-          featureInfo.indicator = indicator
-        }
-        const eventHandler = {
-          mouseClickEvent: this._featureClickEvent(actionType, featureInfo),
-          mouseMoveEvent: this._featureMouseMoveEvent(featureInfo)
-        }
-        let contentWidth = 0
-        if (type === 'icon_font') {
-          const iconFont = content as FeatureIconFontStyle
-          this.createFigure({
-            name: 'text',
-            attrs: { text: iconFont.code, x: coordinate.x + marginLeft, y: coordinate.y + marginTop },
-            styles: {
-              paddingLeft,
-              paddingTop,
-              paddingRight,
-              paddingBottom,
-              borderRadius,
-              size,
-              family: iconFont.family,
-              color: finalColor,
-              backgroundColor: finalBackgroundColor
-            }
-          }, eventHandler)?.draw(ctx)
-          contentWidth = ctx.measureText(iconFont.code).width
-        } else {
-          this.createFigure({
-            name: 'rect',
-            attrs: { x: coordinate.x + marginLeft, y: coordinate.y + marginTop, width: size, height: size },
-            styles: {
-              paddingLeft,
-              paddingTop,
-              paddingRight,
-              paddingBottom,
-              color: finalBackgroundColor
-            }
-          }, eventHandler)?.draw(ctx)
-          const path = content as FeaturePathStyle
-          this.createFigure({
-            name: 'path',
-            attrs: { path: path.path, x: coordinate.x + marginLeft + paddingLeft, y: coordinate.y + marginTop + paddingTop, width: size, height: size },
-            styles: {
-              style: path.style,
-              lineWidth: path.lineWidth,
-              color: finalColor
-            }
-          })?.draw(ctx)
-          contentWidth = size
-        }
-        coordinate.x += (marginLeft + paddingLeft + contentWidth + paddingRight + marginRight)
+          color, activeColor, size, fontFamily, icon: text,
+          backgroundColor, activeBackgroundColor
+        } = icon
+        const active = activeIcon?.paneId === paneId && activeIcon?.indicatorName === indicatorName && activeIcon?.iconId === icon.id
+        this.createFigure({
+          name: 'text',
+          attrs: { text, x: coordinate.x + marginLeft, y: coordinate.y + marginTop },
+          styles: {
+            paddingLeft,
+            paddingTop,
+            paddingRight,
+            paddingBottom,
+            color: active ? activeColor : color,
+            size,
+            family: fontFamily,
+            backgroundColor: active ? activeBackgroundColor : backgroundColor
+          }
+        }, {
+          mouseClickEvent: this._boundIconClickEvent({ paneId, indicatorName, iconId: icon.id }),
+          mouseMoveEvent: this._boundIconMouseMoveEvent({ paneId, indicatorName, iconId: icon.id })
+        })?.draw(ctx)
+        coordinate.x += (marginLeft + paddingLeft + ctx.measureText(text).width + paddingRight + marginRight)
       })
     }
     return prevRowHeight
@@ -311,99 +255,78 @@ export default class IndicatorTooltipView extends View<YAxis> {
 
   protected isDrawTooltip (crosshair: Crosshair, styles: TooltipStyle): boolean {
     const showRule = styles.showRule
-    return showRule === 'always' ||
-      (showRule === 'follow_cross' && isString(crosshair.paneId))
+    return showRule === TooltipShowRule.Always ||
+      (showRule === TooltipShowRule.FollowCross && isString(crosshair.paneId))
   }
 
-  protected getIndicatorTooltipData (indicator: Indicator): IndicatorTooltipData {
-    const chartStore = this.getWidget().getPane().getChart().getChartStore()
-    const styles = chartStore.getStyles().indicator
+  protected getIndicatorTooltipData (
+    dataList: KLineData[],
+    crosshair: Crosshair,
+    indicator: Indicator,
+    customApi: CustomApi,
+    thousandsSeparator: string,
+    decimalFoldThreshold: number,
+    styles: IndicatorStyle
+  ): IndicatorTooltipData {
     const tooltipStyles = styles.tooltip
-    const tooltipTitleStyles = tooltipStyles.title
-    let name = ''
+    const name = tooltipStyles.showName ? indicator.shortName : ''
     let calcParamsText = ''
-    if (tooltipTitleStyles.show) {
-      if (tooltipTitleStyles.showName) {
-        name = indicator.shortName
-      }
-      if (tooltipTitleStyles.showParams) {
-        const calcParams = indicator.calcParams
-        if (calcParams.length > 0) {
-          calcParamsText = `(${calcParams.join(',')})`
-        }
-      }
+    const calcParams = indicator.calcParams
+    if (calcParams.length > 0 && tooltipStyles.showParams) {
+      calcParamsText = `(${calcParams.join(',')})`
     }
-    const tooltipData: IndicatorTooltipData = { name, calcParamsText, legends: [], features: tooltipStyles.features }
 
-    const dataIndex = chartStore.getCrosshair().dataIndex!
-    const result = indicator.result
+    const tooltipData: IndicatorTooltipData = { name, calcParamsText, values: [], icons: tooltipStyles.icons }
 
-    const formatter = chartStore.getInnerFormatter()
-    const decimalFold = chartStore.getDecimalFold()
-    const thousandsSeparator = chartStore.getThousandsSeparator()
+    const dataIndex = crosshair.dataIndex!
+    const result = indicator.result ?? []
+
     const legends: TooltipLegend[] = []
     if (indicator.visible) {
-      const kLineDataList = chartStore.getDataList()
-      const kLineData = kLineDataList[dataIndex] ?? {}
-      const prevKLineData = kLineDataList[dataIndex - 1] ?? {}
-      let data = result[kLineData.timestamp]
-      if (!isValid(data) && dataIndex === kLineDataList.length - 1) {
-        data = result[prevKLineData.timestamp]
-      }
-      const defaultValue = tooltipStyles.legend.defaultValue
-      eachFigures(
-        indicator,
-        {
-          prev: prevKLineData.timestamp,
-          current: kLineData.timestamp,
-          next: kLineDataList[dataIndex]?.timestamp
-        },
-        styles,
-        (figure: IndicatorFigure, figureStyles: Required<IndicatorFigureStyle>) => {
-          if (isString(figure.title)) {
-            const color = figureStyles.color
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-            let value = data?.[figure.key]
-            if (isNumber(value)) {
-              value = formatPrecision(value, indicator.precision)
-              if (indicator.shouldFormatBigNumber) {
-                value = formatter.formatBigNumber(value as string)
-              }
-              value = decimalFold.format(thousandsSeparator.format(value as string))
+      const indicatorData = result[dataIndex] ?? {}
+      eachFigures(dataList, indicator, dataIndex, styles, (figure: IndicatorFigure, figureStyles: Required<IndicatorFigureStyle>) => {
+        if (isString(figure.title)) {
+          const color = figureStyles.color
+          let value = indicatorData[figure.key] ?? tooltipStyles.defaultValue
+          if (isNumber(value)) {
+            value = formatPrecision(value, indicator.precision)
+            if (indicator.shouldFormatBigNumber) {
+              value = customApi.formatBigNumber(value as string)
             }
-            legends.push({ title: { text: figure.title, color }, value: { text: (value ?? defaultValue) as string, color } })
+            value = formatFoldDecimal(formatThousands(value as string, thousandsSeparator), decimalFoldThreshold)
           }
-        })
-      tooltipData.legends = legends
+          legends.push({ title: { text: figure.title, color }, value: { text: value, color } })
+        }
+      })
+      tooltipData.values = legends
     }
 
-    if (isFunction(indicator.createTooltipDataSource)) {
+    if (indicator.createTooltipDataSource !== null) {
       const widget = this.getWidget()
       const pane = widget.getPane()
-      const chart = pane.getChart()
-      const { name: customName, calcParamsText: customCalcParamsText, legends: customLegends, features: customFeatures } = indicator.createTooltipDataSource({
-        chart,
+      const chartStore = pane.getChart().getChartStore()
+      const { name: customName, calcParamsText: customCalcParamsText, values: customLegends, icons: customIcons } = indicator.createTooltipDataSource({
+        kLineDataList: dataList,
         indicator,
-        crosshair: chartStore.getCrosshair(),
+        visibleRange: chartStore.getTimeScaleStore().getVisibleRange(),
         bounding: widget.getBounding(),
+        crosshair,
+        defaultStyles: styles,
         xAxis: pane.getChart().getXAxisPane().getAxisComponent(),
         yAxis: pane.getAxisComponent()
       })
-      if (tooltipTitleStyles.show) {
-        if (isString(customName) && tooltipTitleStyles.showName) {
-          tooltipData.name = customName
-        }
-        if (isString(customCalcParamsText) && tooltipTitleStyles.showParams) {
-          tooltipData.calcParamsText = customCalcParamsText
-        }
+      if (isString(customName) && tooltipStyles.showName) {
+        tooltipData.name = customName
       }
-
-      if (isValid(customFeatures)) {
-        tooltipData.features = customFeatures
+      if (isString(customCalcParamsText) && tooltipStyles.showParams) {
+        tooltipData.calcParamsText = customCalcParamsText
+      }
+      if (isValid(customIcons)) {
+        tooltipData.icons = customIcons
       }
       if (isValid(customLegends) && indicator.visible) {
         const optimizedLegends: TooltipLegend[] = []
-        const color = styles.tooltip.legend.color
+        const color = styles.tooltip.text.color
         customLegends.forEach(data => {
           let title = { text: '', color }
           if (isObject(data.title)) {
@@ -415,39 +338,44 @@ export default class IndicatorTooltipView extends View<YAxis> {
           if (isObject(data.value)) {
             value = data.value
           } else {
-            value.text = data.value
+            value.text = data.value ?? tooltipStyles.defaultValue
           }
-          if (isNumber(Number(value.text))) {
-            value.text = decimalFold.format(thousandsSeparator.format(value.text))
+          if (isNumber(value.text)) {
+            let text = formatPrecision(value.text, indicator.precision)
+            if (indicator.shouldFormatBigNumber) {
+              text = customApi.formatBigNumber(text)
+            }
+            text = formatFoldDecimal(formatThousands(text, thousandsSeparator), decimalFoldThreshold)
+            value.text = text
           }
           optimizedLegends.push({ title, value })
         })
-        tooltipData.legends = optimizedLegends
+        tooltipData.values = optimizedLegends
       }
     }
     return tooltipData
   }
 
-  protected classifyTooltipFeatures (features: TooltipFeatureStyle[]): TooltipFeatureStyle[][] {
-    const leftFeatures: TooltipFeatureStyle[] = []
-    const middleFeatures: TooltipFeatureStyle[] = []
-    const rightFeatures: TooltipFeatureStyle[] = []
-    features.forEach(feature => {
-      switch (feature.position) {
-        case 'left': {
-          leftFeatures.push(feature)
+  protected classifyTooltipIcons (icons: TooltipIconStyle[]): TooltipIconStyle[][] {
+    const leftIcons: TooltipIconStyle[] = []
+    const middleIcons: TooltipIconStyle[] = []
+    const rightIcons: TooltipIconStyle[] = []
+    icons.forEach(icon => {
+      switch (icon.position) {
+        case TooltipIconPosition.Left: {
+          leftIcons.push(icon)
           break
         }
-        case 'middle': {
-          middleFeatures.push(feature)
+        case TooltipIconPosition.Middle: {
+          middleIcons.push(icon)
           break
         }
-        case 'right': {
-          rightFeatures.push(feature)
+        case TooltipIconPosition.Right: {
+          rightIcons.push(icon)
           break
         }
       }
     })
-    return [leftFeatures, middleFeatures, rightFeatures]
+    return [leftIcons, middleIcons, rightIcons]
   }
 }

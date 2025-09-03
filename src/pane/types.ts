@@ -12,18 +12,29 @@
  * limitations under the License.
  */
 
-import type { AxisCreate } from '../component/Axis'
+export interface PaneGap {
+  top?: number
+  bottom?: number
+}
 
-export type PaneState = 'normal' | 'maximize' | 'minimize'
+export interface PaneAxisOptions {
+  name?: string
+  scrollZoomEnabled?: boolean
+}
+
+export const enum PanePosition {
+  Top = 'top',
+  Bottom = 'bottom'
+}
 
 export interface PaneOptions {
   id?: string
   height?: number
   minHeight?: number
   dragEnabled?: boolean
-  order?: number
-  state?: PaneState,
-  axis?: Partial<AxisCreate>
+  position?: PanePosition
+  gap?: PaneGap
+  axisOptions?: PaneAxisOptions
 }
 
 export const PANE_MIN_HEIGHT = 30

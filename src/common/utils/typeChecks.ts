@@ -12,16 +12,13 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ignore
 export function merge (target: any, source: any): void {
   if ((!isObject(target) && !isObject(source))) {
     return
   }
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key) as boolean) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- ignore
       const targetProp = target[key]
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- ignore
       const sourceProp = source[key]
       if (
         isObject(sourceProp) &&
@@ -29,9 +26,7 @@ export function merge (target: any, source: any): void {
       ) {
         merge(targetProp, sourceProp)
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- ignore
         if (isValid(source[key])) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- ignore
           target[key] = clone(source[key])
         }
       }
@@ -44,8 +39,7 @@ export function clone<T> (target: T): T {
     return target
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ignore
-  let copy: any = null
+  let copy
   if (isArray(target)) {
     copy = []
   } else {
@@ -55,43 +49,39 @@ export function clone<T> (target: T): T {
     if (Object.prototype.hasOwnProperty.call(target, key) as boolean) {
       const v = target[key]
       if (isObject(v)) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- ignore
         copy[key] = clone(v)
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- ignore
         copy[key] = v
       }
     }
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ignore
   return copy
 }
 
-export function isArray<T = unknown> (value: unknown): value is T[] {
+export function isArray<T = any> (value: any): value is T[] {
   return Object.prototype.toString.call(value) === '[object Array]'
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- ignore
-export function isFunction<T = (...args: unknown[]) => unknown> (value: unknown): value is T {
+export function isFunction<T = (...args: any) => any> (value: any): value is T {
   return typeof value === 'function'
 }
 
-export function isObject (value: unknown): value is object {
+export function isObject (value: any): value is object {
   return (typeof value === 'object') && isValid(value)
 }
 
-export function isNumber (value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
+export function isNumber (value: any): value is number {
+  return typeof value === 'number' && !isNaN(value)
 }
 
 export function isValid<T> (value: T | null | undefined): value is T {
   return value !== null && value !== undefined
 }
 
-export function isBoolean (value: unknown): value is boolean {
+export function isBoolean (value: any): value is boolean {
   return typeof value === 'boolean'
 }
 
-export function isString (value: unknown): value is string {
+export function isString (value: any): value is string {
   return typeof value === 'string'
 }

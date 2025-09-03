@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-import type { IndicatorTemplate } from '../../component/Indicator'
+import type KLineData from '../../common/KLineData'
+import { type Indicator, type IndicatorTemplate } from '../../component/Indicator'
 
 interface Roc {
   roc?: number
@@ -23,7 +24,7 @@ interface Roc {
  * 变动率指标
  * 公式：ROC = (CLOSE - REF(CLOSE, N)) / REF(CLOSE, N)
  */
-const rateOfChange: IndicatorTemplate<Roc, number> = {
+const rateOfChange: IndicatorTemplate<Roc> = {
   name: 'ROC',
   shortName: 'ROC',
   calcParams: [12, 6],
@@ -31,12 +32,11 @@ const rateOfChange: IndicatorTemplate<Roc, number> = {
     { key: 'roc', title: 'ROC: ', type: 'line' },
     { key: 'maRoc', title: 'MAROC: ', type: 'line' }
   ],
-  calc: (dataList, indicator) => {
-    const params = indicator.calcParams
-    const rocList: Roc[] = []
-    const result: Record<number, Roc> = {}
+  calc: (dataList: KLineData[], indicator: Indicator<Roc>) => {
+    const params = indicator.calcParams as number[]
+    const result: Roc[] = []
     let rocSum = 0
-    dataList.forEach((kLineData, i) => {
+    dataList.forEach((kLineData: KLineData, i: number) => {
       const roc: Roc = {}
       if (i >= params[0] - 1) {
         const close = kLineData.close
@@ -49,11 +49,10 @@ const rateOfChange: IndicatorTemplate<Roc, number> = {
         rocSum += roc.roc
         if (i >= params[0] - 1 + params[1] - 1) {
           roc.maRoc = rocSum / params[1]
-          rocSum -= (rocList[i - (params[1] - 1)].roc ?? 0)
+          rocSum -= (result[i - (params[1] - 1)].roc ?? 0)
         }
       }
-      rocList.push(roc)
-      result[kLineData.timestamp] = roc
+      result.push(roc)
     })
     return result
   }

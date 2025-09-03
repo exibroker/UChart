@@ -13,18 +13,18 @@
  */
 
 import type Coordinate from '../../common/Coordinate'
-import type { PolygonStyle } from '../../common/Styles'
+import { type PolygonStyle, PolygonType, LineType } from '../../common/Styles'
 import { isString } from '../../common/utils/typeChecks'
 import { isTransparent } from '../../common/utils/color'
 
-import type { FigureTemplate } from '../../component/Figure'
+import { type FigureTemplate } from '../../component/Figure'
 
 export function checkCoordinateOnCircle (coordinate: Coordinate, attrs: CircleAttrs | CircleAttrs[]): boolean {
   let circles: CircleAttrs[] = []
   circles = circles.concat(attrs)
 
-  for (const circle of circles) {
-    const { x, y, r } = circle
+  for (let i = 0; i < circles.length; i++) {
+    const { x, y, r } = circles[i]
     const difX = coordinate.x - x
     const difY = coordinate.y - y
     if (!(difX * difX + difY * difY > r * r)) {
@@ -39,15 +39,15 @@ export function drawCircle (ctx: CanvasRenderingContext2D, attrs: CircleAttrs | 
   circles = circles.concat(attrs)
 
   const {
-    style = 'fill',
+    style = PolygonType.Fill,
     color = 'currentColor',
     borderSize = 1,
     borderColor = 'currentColor',
-    borderStyle = 'solid',
+    borderStyle = LineType.Solid,
     borderDashedValue = [2, 2]
   } = styles
 
-  const solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color))
+  const solid = (style === PolygonType.Fill || styles.style === PolygonType.StrokeFill) && (!isString(color) || !isTransparent(color))
   if (solid) {
     ctx.fillStyle = color
     circles.forEach(({ x, y, r }) => {
@@ -57,10 +57,10 @@ export function drawCircle (ctx: CanvasRenderingContext2D, attrs: CircleAttrs | 
       ctx.fill()
     })
   }
-  if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
+  if ((style === PolygonType.Stroke || styles.style === PolygonType.StrokeFill) && borderSize > 0 && !isTransparent(borderColor)) {
     ctx.strokeStyle = borderColor
     ctx.lineWidth = borderSize
-    if (borderStyle === 'dashed') {
+    if (borderStyle === LineType.Dashed) {
       ctx.setLineDash(borderDashedValue)
     } else {
       ctx.setLineDash([])

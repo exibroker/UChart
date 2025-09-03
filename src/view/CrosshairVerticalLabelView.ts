@@ -14,21 +14,22 @@
 
 import type Bounding from '../common/Bounding'
 import type Crosshair from '../common/Crosshair'
-import type { CrosshairStyle, CrosshairDirectionStyle, StateTextStyle } from '../common/Styles'
+import { type CrosshairStyle, type CrosshairDirectionStyle, type StateTextStyle } from '../common/Styles'
 import { isValid } from '../common/utils/typeChecks'
 
-import type { Axis } from '../component/Axis'
-import type { XAxis } from '../component/XAxis'
+import { FormatDateType } from '../Options'
 
-import type ChartStore from '../Store'
+import type Axis from '../component/Axis'
+import type XAxis from '../component/XAxis'
+
+import type ChartStore from '../store/ChartStore'
 
 import CrosshairHorizontalLabelView from './CrosshairHorizontalLabelView'
-import type { TextAttrs } from '../extension/figure/text'
-import { PeriodTypeCrosshairTooltipFormat } from '../common/Period'
+import { type TextAttrs } from '../extension/figure/text'
 
 export default class CrosshairVerticalLabelView extends CrosshairHorizontalLabelView<XAxis> {
   override compare (crosshair: Crosshair): boolean {
-    return isValid(crosshair.timestamp)
+    return isValid(crosshair.kLineData) && crosshair.dataIndex === crosshair.realDataIndex
   }
 
   override getDirectionStyles (styles: CrosshairStyle): CrosshairDirectionStyle {
@@ -36,13 +37,13 @@ export default class CrosshairVerticalLabelView extends CrosshairHorizontalLabel
   }
 
   override getText (crosshair: Crosshair, chartStore: ChartStore): string {
-    const timestamp = crosshair.timestamp!
-    return chartStore.getInnerFormatter().formatDate(timestamp, PeriodTypeCrosshairTooltipFormat[chartStore.getPeriod()?.type ?? 'day'], 'crosshair')
+    const timestamp = crosshair.kLineData?.timestamp
+    return chartStore.getCustomApi().formatDate(chartStore.getTimeScaleStore().getDateTimeFormat(), timestamp!, 'YYYY-MM-DD HH:mm', FormatDateType.Crosshair)
   }
 
   override getTextAttrs (text: string, textWidth: number, crosshair: Crosshair, bounding: Bounding, _axis: Axis, styles: StateTextStyle): TextAttrs {
     const x = crosshair.realX!
-    let optimalX = 0
+    let optimalX: number
     let align: CanvasTextAlign = 'center'
     if (x - textWidth / 2 - styles.paddingLeft < 0) {
       optimalX = 0
